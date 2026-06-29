@@ -115,5 +115,324 @@
         ],
         "created_at": "2026-06-29T22:03:03.703896",
         "updated_at": "2026-06-29T22:04:12.064385"
+    },
+    "inc_79e0fc75": {
+        "id": "inc_79e0fc75",
+        "status": "CLOSED",
+        "goal": "Resolve pothole incident using Public Works Dept (PWD) route",
+        "complainant_name": "vismaya",
+        "issue_type": "pothole",
+        "severity": "high",
+        "confidence": 1.0,
+        "latitude": 12.9716,
+        "longitude": 77.5946,
+        "image_before_url": "/static/inc_79e0fc75_before.webp",
+        "image_after_url": null,
+        "official_token": "BBMP-76262",
+        "current_strategy": {
+            "name": "Public Works Route",
+            "department": "Public Works Dept (PWD)",
+            "sla_hours": 72,
+            "escalation_path": [
+                "Chief PWD Engineer",
+                "Social Escalation"
+            ]
+        },
+        "sla_deadline": "2026-06-29T21:34:48.756347",
+        "escalation_level": 3,
+        "timeline": [
+            {
+                "timestamp": "29 Jun 22:32",
+                "stage": "SYSTEM",
+                "decision": "Incident upload received",
+                "confidence": "100%",
+                "reason": "Citizen filed new incident with GPS coordinates.",
+                "next_action": "Trigger Perception Agent Vision classifier"
+            },
+            {
+                "timestamp": "29 Jun 22:33",
+                "stage": "PERCEPTION",
+                "decision": "Detected pothole",
+                "confidence": "100%",
+                "reason": "A very large and deep pothole, partially filled with water, occupies a significant portion of the road, posing a high risk of vehicle damage and accidents, especially for two-wheelers.",
+                "next_action": "Plan complaint submission"
+            },
+            {
+                "timestamp": "29 Jun 22:33",
+                "stage": "PLANNER",
+                "decision": "Selected strategy workflow",
+                "confidence": "100%",
+                "reason": "No resolved cases found nearby. Loaded default routing for pothole.",
+                "next_action": "Filing complaint petition to department registry"
+            },
+            {
+                "timestamp": "29 Jun 22:33",
+                "stage": "SYSTEM",
+                "decision": "Submitting complaint ticket",
+                "confidence": "100%",
+                "reason": "Submitting official complaint to municipal portal",
+                "next_action": "Awaiting tracking token confirmation from government registry"
+            },
+            {
+                "timestamp": "29 Jun 22:33",
+                "stage": "TOOL",
+                "decision": "Filed official complaint",
+                "confidence": "100%",
+                "reason": "Municipal registry confirmed receipt and generated tracking token: BBMP-76262",
+                "next_action": "Monitoring portal database for resolution update"
+            },
+            {
+                "timestamp": "29 Jun 22:33",
+                "stage": "MONITOR",
+                "decision": "SLA Breach Detected",
+                "confidence": "100%",
+                "reason": "Ticket unresolved after SLA window of 72 hours.",
+                "next_action": "Escalate ticket to higher authority"
+            },
+            {
+                "timestamp": "29 Jun 22:34",
+                "stage": "ESCALATION",
+                "decision": "Escalated to Chief PWD Engineer",
+                "confidence": "100%",
+                "reason": "Human approved escalation. Strategy shifting to level 1.",
+                "next_action": "Monitoring response from Chief PWD Engineer"
+            },
+            {
+                "timestamp": "29 Jun 22:34",
+                "stage": "MONITOR",
+                "decision": "SLA Breach Detected",
+                "confidence": "100%",
+                "reason": "Ticket unresolved after SLA window of 72 hours.",
+                "next_action": "Escalate ticket to higher authority"
+            },
+            {
+                "timestamp": "29 Jun 22:34",
+                "stage": "ESCALATION",
+                "decision": "Escalated to Social Escalation",
+                "confidence": "100%",
+                "reason": "Human approved escalation. Strategy shifting to level 2.",
+                "next_action": "Monitoring response from Social Escalation"
+            },
+            {
+                "timestamp": "29 Jun 22:34",
+                "stage": "MONITOR",
+                "decision": "SLA Breach Detected",
+                "confidence": "100%",
+                "reason": "Ticket unresolved after SLA window of 72 hours.",
+                "next_action": "Escalate ticket to higher authority"
+            },
+            {
+                "timestamp": "29 Jun 22:34",
+                "stage": "ESCALATION",
+                "decision": "All escalation routes exhausted",
+                "confidence": "100%",
+                "reason": "Unable to resolve through digital municipal channels.",
+                "next_action": "Recommending user call direct citizen ward helpline."
+            }
+        ],
+        "created_at": "2026-06-29T22:32:58.842037",
+        "updated_at": "2026-06-29T22:34:48.789396"
+    },
+    "inc_663d5c34": {
+        "id": "inc_663d5c34",
+        "status": "CLOSED",
+        "goal": "Resolve garbage incident using Waste Management Dept route",
+        "complainant_name": "vismaya",
+        "issue_type": "garbage",
+        "severity": "high",
+        "confidence": 1.0,
+        "latitude": 12.9716,
+        "longitude": 77.5946,
+        "image_before_url": "/static/inc_663d5c34_before.avif",
+        "image_after_url": "/static/inc_663d5c34_after.webp",
+        "official_token": "BBMP-4F278",
+        "current_strategy": {
+            "name": "Waste Management Route",
+            "department": "Waste Management Dept",
+            "sla_hours": 24,
+            "escalation_path": [
+                "Area Supervisor",
+                "Social Escalation"
+            ]
+        },
+        "sla_deadline": "2026-06-30T22:35:33.008740",
+        "escalation_level": 0,
+        "timeline": [
+            {
+                "timestamp": "29 Jun 22:35",
+                "stage": "SYSTEM",
+                "decision": "Incident upload received",
+                "confidence": "100%",
+                "reason": "Citizen filed new incident with GPS coordinates.",
+                "next_action": "Trigger Perception Agent Vision classifier"
+            },
+            {
+                "timestamp": "29 Jun 22:35",
+                "stage": "PERCEPTION",
+                "decision": "Detected garbage",
+                "confidence": "100%",
+                "reason": "The image clearly depicts a very large accumulation of various types of waste, including household trash, construction debris, and organic matter, forming a substantial pile on the roadside.",
+                "next_action": "Plan complaint submission"
+            },
+            {
+                "timestamp": "29 Jun 22:35",
+                "stage": "PLANNER",
+                "decision": "Selected strategy workflow",
+                "confidence": "100%",
+                "reason": "No resolved cases found nearby. Loaded default routing for garbage.",
+                "next_action": "Filing complaint petition to department registry"
+            },
+            {
+                "timestamp": "29 Jun 22:35",
+                "stage": "SYSTEM",
+                "decision": "Submitting complaint ticket",
+                "confidence": "100%",
+                "reason": "Submitting official complaint to municipal portal",
+                "next_action": "Awaiting tracking token confirmation from government registry"
+            },
+            {
+                "timestamp": "29 Jun 22:35",
+                "stage": "TOOL",
+                "decision": "Filed official complaint",
+                "confidence": "100%",
+                "reason": "Municipal registry confirmed receipt and generated tracking token: BBMP-4F278",
+                "next_action": "Monitoring portal database for resolution update"
+            },
+            {
+                "timestamp": "29 Jun 22:35",
+                "stage": "MONITOR",
+                "decision": "Portal resolution detected",
+                "confidence": "100%",
+                "reason": "External portal marked ticket status as RESOLVED.",
+                "next_action": "Request citizen upload a resolution verification photo"
+            },
+            {
+                "timestamp": "29 Jun 22:35",
+                "stage": "VERIFY",
+                "decision": "Incident verified resolved",
+                "confidence": "95%",
+                "reason": "The 'Before' image shows a significant pile of garbage on the side of a road, indicating a civic hazard. The 'After' image, while appearing to be a different location, depicts a clean, clear, and well-maintained road. Adhering to the critical demo rule, the 'After' image demonstrates a 'cleared area' consistent with the resolution of a garbage issue, and therefore the civic issue is considered resolved.",
+                "next_action": "Close incident ticket as successfully resolved."
+            }
+        ],
+        "created_at": "2026-06-29T22:35:21.223369",
+        "updated_at": "2026-06-29T22:35:55.741865"
+    },
+    "inc_8922b936": {
+        "id": "inc_8922b936",
+        "status": "CLOSED",
+        "goal": "Resolve fallen tree incident using Forest & Parks Dept route",
+        "complainant_name": "vismaya",
+        "issue_type": "fallen_tree",
+        "severity": "high",
+        "confidence": 1.0,
+        "latitude": 12.9716,
+        "longitude": 77.5946,
+        "image_before_url": "/static/inc_8922b936_before.jpg",
+        "image_after_url": "/static/inc_8922b936_after.webp",
+        "official_token": "BBMP-BFB31",
+        "current_strategy": {
+            "name": "Forestry Emergency Route",
+            "department": "Forest & Parks Dept",
+            "sla_hours": 12,
+            "escalation_path": [
+                "Horticulture Officer",
+                "Social Escalation"
+            ]
+        },
+        "sla_deadline": "2026-06-30T10:36:53.002210",
+        "escalation_level": 2,
+        "timeline": [
+            {
+                "timestamp": "29 Jun 22:36",
+                "stage": "SYSTEM",
+                "decision": "Incident upload received",
+                "confidence": "100%",
+                "reason": "Citizen filed new incident with GPS coordinates.",
+                "next_action": "Trigger Perception Agent Vision classifier"
+            },
+            {
+                "timestamp": "29 Jun 22:36",
+                "stage": "PERCEPTION",
+                "decision": "Detected fallen_tree",
+                "confidence": "100%",
+                "reason": "A large tree branch has broken off its trunk and fallen, obstructing a pathway and creating a significant safety hazard due to its size and position.",
+                "next_action": "Plan complaint submission"
+            },
+            {
+                "timestamp": "29 Jun 22:36",
+                "stage": "PLANNER",
+                "decision": "Selected strategy workflow",
+                "confidence": "100%",
+                "reason": "No resolved cases found nearby. Loaded default routing for fallen_tree.",
+                "next_action": "Filing complaint petition to department registry"
+            },
+            {
+                "timestamp": "29 Jun 22:36",
+                "stage": "SYSTEM",
+                "decision": "Submitting complaint ticket",
+                "confidence": "100%",
+                "reason": "Submitting official complaint to municipal portal",
+                "next_action": "Awaiting tracking token confirmation from government registry"
+            },
+            {
+                "timestamp": "29 Jun 22:36",
+                "stage": "TOOL",
+                "decision": "Filed official complaint",
+                "confidence": "100%",
+                "reason": "Municipal registry confirmed receipt and generated tracking token: BBMP-BFB31",
+                "next_action": "Monitoring portal database for resolution update"
+            },
+            {
+                "timestamp": "29 Jun 22:36",
+                "stage": "TOOL",
+                "decision": "Portal submission failed",
+                "confidence": "0%",
+                "reason": "Simulator override: Government submission database returned 504 Gateway Timeout.",
+                "next_action": "Triggering automated human-in-the-loop escalation dispatch"
+            },
+            {
+                "timestamp": "29 Jun 22:36",
+                "stage": "ESCALATION",
+                "decision": "Escalated to Horticulture Officer",
+                "confidence": "100%",
+                "reason": "Human approved escalation. Strategy shifting to level 1.",
+                "next_action": "Monitoring response from Horticulture Officer"
+            },
+            {
+                "timestamp": "29 Jun 22:36",
+                "stage": "TOOL",
+                "decision": "Portal submission failed",
+                "confidence": "0%",
+                "reason": "Simulator override: Government submission database returned 504 Gateway Timeout.",
+                "next_action": "Triggering automated human-in-the-loop escalation dispatch"
+            },
+            {
+                "timestamp": "29 Jun 22:36",
+                "stage": "ESCALATION",
+                "decision": "Escalated to Social Escalation",
+                "confidence": "100%",
+                "reason": "Human approved escalation. Strategy shifting to level 2.",
+                "next_action": "Monitoring response from Social Escalation"
+            },
+            {
+                "timestamp": "29 Jun 22:36",
+                "stage": "MONITOR",
+                "decision": "Portal resolution detected",
+                "confidence": "100%",
+                "reason": "External portal marked ticket status as RESOLVED.",
+                "next_action": "Request citizen upload a resolution verification photo"
+            },
+            {
+                "timestamp": "29 Jun 22:37",
+                "stage": "VERIFY",
+                "decision": "Incident verified resolved",
+                "confidence": "95%",
+                "reason": "The 'Before Image' clearly shows a large fallen tree blocking a sidewalk and potentially part of a street, representing a significant civic hazard. The 'After Image' depicts a clean, clear, and unobstructed road, fulfilling the condition of a 'cleared area'. According to the provided critical demo rules, differences in location, background, and specific street features should be ignored, and a clean road in the 'After Image' is to be considered proof of resolution. Therefore, the issue of the fallen tree is assessed as resolved.",
+                "next_action": "Close incident ticket as successfully resolved."
+            }
+        ],
+        "created_at": "2026-06-29T22:36:13.643488",
+        "updated_at": "2026-06-29T22:37:30.290918"
     }
 }

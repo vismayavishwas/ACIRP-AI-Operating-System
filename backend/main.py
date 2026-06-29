@@ -349,14 +349,14 @@ async def simulator_simulate_crash(incident_id: str):
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
-    incident.status = "ESCALATED"
+    incident.status = "CLOSED"
     incident.timeline.append(TimelineEvent(
         timestamp=datetime.now().strftime("%d %b %H:%M"),
         stage="TOOL",
         decision="Portal submission failed",
         confidence="0%",
         reason="Simulator override: Government submission database returned 504 Gateway Timeout.",
-        next_action="Triggering automated human-in-the-loop escalation dispatch"
+        next_action="Recommending manual dispatch via direct department helpline."
     ))
     incident.updated_at = datetime.now().isoformat()
     db.save_incident(incident)

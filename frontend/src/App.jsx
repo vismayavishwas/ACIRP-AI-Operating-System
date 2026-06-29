@@ -189,7 +189,6 @@ export default function App() {
       const data = await res.json();
       setIncidents(data);
       if (data.length > 0 && isFirstLoadRef.current) {
-        setSelectedIncId(data[0].id);
         isFirstLoadRef.current = false;
       }
     } catch (err) {
@@ -797,11 +796,19 @@ export default function App() {
                             ) : (
                               <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider text-center p-2 leading-tight flex flex-col items-center justify-center h-full">
                                 {selectedIncident.status === "CLOSED" ? (
-                                  <>
-                                    <AlertTriangle className="h-4.5 w-4.5 text-amber-500 mb-1 animate-pulse" />
-                                    <span>Escalated Close</span>
-                                    <span className="text-[7px] text-slate-400 lowercase mt-0.5 font-normal">(No Photo Proof)</span>
-                                  </>
+                                  selectedIncident.timeline?.some(event => event.decision === "Portal submission failed") ? (
+                                    <>
+                                      <AlertTriangle className="h-4.5 w-4.5 text-rose-500 mb-1 animate-pulse" />
+                                      <span>Website Failed</span>
+                                      <span className="text-[7px] text-slate-400 lowercase mt-0.5 font-normal">(No Photo Proof)</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <AlertTriangle className="h-4.5 w-4.5 text-amber-500 mb-1 animate-pulse" />
+                                      <span>Escalated Close</span>
+                                      <span className="text-[7px] text-slate-400 lowercase mt-0.5 font-normal">(No Photo Proof)</span>
+                                    </>
+                                  )
                                 ) : (
                                   "Awaiting Cleanup Proof"
                                 )}
@@ -1130,29 +1137,38 @@ export default function App() {
         </div>
       )}
 
-      {showPortalCrashDialog && (
+      {showPortalCrashDialog && selectedIncident && (
         <div className="fixed inset-0 bg-slate-950/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-100 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl">
+          <div className="bg-white border border-slate-100 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl text-left">
             <div className="flex items-center gap-2 text-rose-600 border-b border-slate-100 pb-3">
-              <AlertTriangle className="h-5 w-5" />
+              <AlertTriangle className="h-5 w-5 animate-pulse" />
               <h3 className="font-outfit font-bold text-sm text-slate-800">
                 Government Portal Offline (HTTP 504)
               </h3>
             </div>
             
             <p className="text-xs text-slate-600 leading-relaxed">
-              The autonomous agent failed to submit the complaint petition to the municipal database registry due to an external gateway connection timeout.
+              The autonomous agent encountered a gateway connection timeout while submitting the petition to the municipal portal. Portal database integration has failed.
             </p>
-            <div className="bg-rose-50 border border-rose-100 text-rose-800 text-[11px] p-3 rounded-xl font-mono leading-normal">
-              <strong>SYSTEM NOTICE:</strong> Emergency failover protocol activated. The incident status has shifted to ESCALATED. Manual citizen approval is required to bypass portal integration and escalate directly to the designated department.
+
+            <div className="bg-rose-50 border border-rose-100 text-rose-800 text-xs p-4 rounded-xl space-y-2">
+              <p><strong>Emergency Dispatch Contact Suggestion:</strong></p>
+              <p className="font-semibold">Dept: {HELPLINES[selectedIncident.issue_type]?.dept || "Public Works Department"}</p>
+              <p className="text-sm font-bold font-mono">📞 Hotline: {HELPLINES[selectedIncident.issue_type]?.phone || "080-2223-1800"}</p>
             </div>
 
             <div className="pt-2 flex justify-end">
               <button 
-                onClick={() => setShowPortalCrashDialog(false)}
+                onClick={() => {
+                  setShowPortalCrashDialog(false);
+                  setSelectedIncId("");
+                  setSelectedIncident(null);
+                  setBrainDecision(null);
+                  setVerifyFile(null);
+                }}
                 className="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-4 rounded-xl text-xs transition"
               >
-                Proceed to Manual Escalation
+                Acknowledge & Archive Case
               </button>
             </div>
           </div>
