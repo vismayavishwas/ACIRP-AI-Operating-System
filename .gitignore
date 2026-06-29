@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Python env
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+
+# Database and uploaded files
+*.db
+backend/static/*.jpg
+backend/static/*.png
+backend/static/letters/
+
+# IDE files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

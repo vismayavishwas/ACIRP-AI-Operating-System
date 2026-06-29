@@ -1,0 +1,119 @@
+{
+    "inc_c9ad2357": {
+        "id": "inc_c9ad2357",
+        "status": "CLOSED",
+        "goal": "Resolve fallen tree incident using Forest & Parks Dept route",
+        "complainant_name": "vis",
+        "issue_type": "fallen_tree",
+        "severity": "medium",
+        "confidence": 1.0,
+        "latitude": 12.9716,
+        "longitude": 77.5946,
+        "image_before_url": "/static/inc_c9ad2357_before.jpg",
+        "image_after_url": null,
+        "official_token": "BBMP-18663",
+        "current_strategy": {
+            "name": "Forestry Emergency Route",
+            "department": "Forest & Parks Dept",
+            "sla_hours": 12,
+            "escalation_path": [
+                "Horticulture Officer",
+                "Emergency Helpline"
+            ]
+        },
+        "sla_deadline": "2026-06-29T21:04:12.047925",
+        "escalation_level": 3,
+        "timeline": [
+            {
+                "timestamp": "29 Jun 22:03",
+                "stage": "SYSTEM",
+                "decision": "Incident upload received",
+                "confidence": "100%",
+                "reason": "Citizen filed new incident with GPS coordinates.",
+                "next_action": "Trigger Perception Agent Vision classifier"
+            },
+            {
+                "timestamp": "29 Jun 22:03",
+                "stage": "PERCEPTION",
+                "decision": "Detected fallen_tree",
+                "confidence": "100%",
+                "reason": "A large tree branch has broken off its main trunk and is obstructing the sidewalk, clearly indicating a fallen tree incident.",
+                "next_action": "Plan complaint submission"
+            },
+            {
+                "timestamp": "29 Jun 22:03",
+                "stage": "PLANNER",
+                "decision": "Selected strategy workflow",
+                "confidence": "100%",
+                "reason": "No resolved cases found nearby. Loaded default routing for fallen_tree.",
+                "next_action": "Filing complaint petition to department registry"
+            },
+            {
+                "timestamp": "29 Jun 22:03",
+                "stage": "SYSTEM",
+                "decision": "Submitting complaint ticket",
+                "confidence": "100%",
+                "reason": "Submitting official complaint to municipal portal",
+                "next_action": "Awaiting tracking token confirmation from government registry"
+            },
+            {
+                "timestamp": "29 Jun 22:03",
+                "stage": "TOOL",
+                "decision": "Filed official complaint",
+                "confidence": "100%",
+                "reason": "Municipal registry confirmed receipt and generated tracking token: BBMP-18663",
+                "next_action": "Monitoring portal database for resolution update"
+            },
+            {
+                "timestamp": "29 Jun 22:03",
+                "stage": "MONITOR",
+                "decision": "SLA Breach Detected",
+                "confidence": "100%",
+                "reason": "Ticket unresolved after SLA window of 12 hours.",
+                "next_action": "Escalate ticket to higher authority"
+            },
+            {
+                "timestamp": "29 Jun 22:03",
+                "stage": "ESCALATION",
+                "decision": "Escalated to Horticulture Officer",
+                "confidence": "100%",
+                "reason": "Human approved escalation. Strategy shifting to level 1.",
+                "next_action": "Monitoring response from Horticulture Officer"
+            },
+            {
+                "timestamp": "29 Jun 22:04",
+                "stage": "MONITOR",
+                "decision": "SLA Breach Detected",
+                "confidence": "100%",
+                "reason": "Ticket unresolved after SLA window of 12 hours.",
+                "next_action": "Escalate ticket to higher authority"
+            },
+            {
+                "timestamp": "29 Jun 22:04",
+                "stage": "ESCALATION",
+                "decision": "Escalated to Emergency Helpline",
+                "confidence": "100%",
+                "reason": "Human approved escalation. Strategy shifting to level 2.",
+                "next_action": "Monitoring response from Emergency Helpline"
+            },
+            {
+                "timestamp": "29 Jun 22:04",
+                "stage": "MONITOR",
+                "decision": "SLA Breach Detected",
+                "confidence": "100%",
+                "reason": "Ticket unresolved after SLA window of 12 hours.",
+                "next_action": "Escalate ticket to higher authority"
+            },
+            {
+                "timestamp": "29 Jun 22:04",
+                "stage": "ESCALATION",
+                "decision": "All escalation routes exhausted",
+                "confidence": "100%",
+                "reason": "Unable to resolve through digital municipal channels.",
+                "next_action": "Recommending user call direct citizen ward helpline."
+            }
+        ],
+        "created_at": "2026-06-29T22:03:03.703896",
+        "updated_at": "2026-06-29T22:04:12.064385"
+    }
+}
