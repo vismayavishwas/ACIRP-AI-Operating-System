@@ -1,4 +1,4 @@
-# ACIRP (Autonomous Civic Resolution Platform)
+# ACIRP (Autonomous Civic Incident Resolution Platform)
 ### *An AI-Agent Powered Operating System for Resilient Civic Incident Management*
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)

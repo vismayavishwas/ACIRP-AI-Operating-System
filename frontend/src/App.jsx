@@ -445,11 +445,32 @@ export default function App() {
 
       {/* Top Header bar */}
       <header className="flex justify-between items-center max-w-7xl w-full mx-auto mb-8 border-b border-slate-200/40 pb-4">
-        <div className="flex items-center gap-2">
-          <div className="h-2.5 w-2.5 rounded-full bg-gradient-to-tr from-blue-500 via-yellow-400 to-rose-500 animate-pulse shadow-md" />
-          <h1 className="font-outfit font-extrabold text-lg tracking-wider text-slate-800 flex items-center gap-1.5">
-            ACIRP <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full tracking-normal uppercase border border-slate-200 shadow-sm">AI Operating System</span>
-          </h1>
+        <div className="flex items-center gap-3.5">
+          {/* Custom Innovative Logo: The Intersecting Möbius Loop */}
+          <svg className="h-8 w-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="logo-tri" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#00F2FE" />
+                <stop offset="50%" stopColor="#4FACFE" />
+                <stop offset="100%" stopColor="#9B51E0" />
+              </linearGradient>
+            </defs>
+            <g stroke="url(#logo-tri)" strokeWidth="8" strokeLinecap="round" opacity="0.95">
+              <path d="M50 25 C65 40, 65 60, 50 75 C35 60, 35 40, 50 25 Z" transform="rotate(0 50 50)" />
+              <path d="M50 25 C65 40, 65 60, 50 75 C35 60, 35 40, 50 25 Z" transform="rotate(120 50 50)" />
+              <path d="M50 25 C65 40, 65 60, 50 75 C35 60, 35 40, 50 25 Z" transform="rotate(240 50 50)" />
+            </g>
+            <circle cx="50" cy="50" r="6" fill="#FFFFFF" />
+          </svg>
+          
+          <div className="flex flex-col text-left">
+            <h1 className="font-outfit font-extrabold text-lg tracking-wider text-slate-800 flex items-center gap-1.5 leading-none">
+              ACIRP <span className="text-[9px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full tracking-normal uppercase border border-slate-200">AI OS</span>
+            </h1>
+            <span className="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-widest mt-1">
+              Autonomous Civic Incident Resolution Platform
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

@@ -434,5 +434,82 @@
         ],
         "created_at": "2026-06-29T22:36:13.643488",
         "updated_at": "2026-06-29T22:37:30.290918"
+    },
+    "inc_0a5a4cac": {
+        "id": "inc_0a5a4cac",
+        "status": "CLOSED",
+        "goal": "Resolve fallen tree incident using Forest & Parks Dept route",
+        "complainant_name": "vismaya",
+        "issue_type": "fallen_tree",
+        "severity": "high",
+        "confidence": 0.98,
+        "latitude": 12.9716,
+        "longitude": 77.5946,
+        "image_before_url": "/static/inc_0a5a4cac_before.jpg",
+        "image_after_url": null,
+        "official_token": "BBMP-1A84C",
+        "current_strategy": {
+            "name": "Forestry Emergency Route",
+            "department": "Forest & Parks Dept",
+            "sla_hours": 12,
+            "escalation_path": [
+                "Horticulture Officer",
+                "Social Escalation"
+            ]
+        },
+        "sla_deadline": "2026-06-30T10:43:30.361015",
+        "escalation_level": 0,
+        "timeline": [
+            {
+                "timestamp": "29 Jun 22:43",
+                "stage": "SYSTEM",
+                "decision": "Incident upload received",
+                "confidence": "100%",
+                "reason": "Citizen filed new incident with GPS coordinates.",
+                "next_action": "Trigger Perception Agent Vision classifier"
+            },
+            {
+                "timestamp": "29 Jun 22:43",
+                "stage": "PERCEPTION",
+                "decision": "Detected fallen_tree",
+                "confidence": "98%",
+                "reason": "A large tree has fallen, with a substantial limb broken off and obstructing the sidewalk and pathway. This poses a significant hazard and blocks pedestrian access.",
+                "next_action": "Plan complaint submission"
+            },
+            {
+                "timestamp": "29 Jun 22:43",
+                "stage": "PLANNER",
+                "decision": "Selected strategy workflow",
+                "confidence": "100%",
+                "reason": "No resolved cases found nearby. Loaded default routing for fallen_tree.",
+                "next_action": "Filing complaint petition to department registry"
+            },
+            {
+                "timestamp": "29 Jun 22:43",
+                "stage": "SYSTEM",
+                "decision": "Submitting complaint ticket",
+                "confidence": "100%",
+                "reason": "Submitting official complaint to municipal portal",
+                "next_action": "Awaiting tracking token confirmation from government registry"
+            },
+            {
+                "timestamp": "29 Jun 22:43",
+                "stage": "TOOL",
+                "decision": "Filed official complaint",
+                "confidence": "100%",
+                "reason": "Municipal registry confirmed receipt and generated tracking token: BBMP-1A84C",
+                "next_action": "Monitoring portal database for resolution update"
+            },
+            {
+                "timestamp": "29 Jun 22:43",
+                "stage": "TOOL",
+                "decision": "Portal submission failed",
+                "confidence": "0%",
+                "reason": "Simulator override: Government submission database returned 504 Gateway Timeout.",
+                "next_action": "Recommending manual dispatch via direct department helpline."
+            }
+        ],
+        "created_at": "2026-06-29T22:43:17.917774",
+        "updated_at": "2026-06-29T22:43:32.262088"
     }
 }
