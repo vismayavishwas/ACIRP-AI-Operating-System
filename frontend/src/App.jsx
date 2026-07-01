@@ -141,6 +141,34 @@ export default function App() {
   const [similarityActive, setSimilarityActive] = useState(false);
   const [similarityIncidents, setSimilarityIncidents] = useState([]);
 
+  const getEscalationReason = () => {
+    if (!selectedIncident?.timeline) return "SLA deadline expired.";
+    const hasSLA = selectedIncident.timeline.some(e => 
+      e.decision?.toLowerCase().includes("sla") || 
+      e.reason?.toLowerCase().includes("sla")
+    );
+    const hasCrash = selectedIncident.timeline.some(e => 
+      e.decision?.toLowerCase().includes("fail") || 
+      e.decision?.toLowerCase().includes("crash") || 
+      e.reason?.toLowerCase().includes("fail") ||
+      e.reason?.toLowerCase().includes("timeout")
+    );
+    if (hasSLA) return "SLA Breach (24h Window Expired)";
+    if (hasCrash) return "Portal Integration Failure (HTTP 504 Gateway Timeout)";
+    return "Portal Timeout / SLA Deadline Escalation";
+  };
+
+  // Boot Splash & Mobile Tab states
+  const [showBootSplash, setShowBootSplash] = useState(true);
+  const [activeMobileTab, setActiveMobileTab] = useState("terminal");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowBootSplash(false);
+    }, 2200);
+    return () => clearTimeout(timer);
+  }, []);
+
   const addToast = (message, type = "info") => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -172,13 +200,12 @@ export default function App() {
     }
   }, [selectedIncident?.status, isTicking]);
 
-  // Cycle stories when loading
   useEffect(() => {
     if (isTicking) {
       setStoryIndex(0);
       const timer = setInterval(() => {
         setStoryIndex(prev => (prev < STORYTELLER_STEPS.length - 1 ? prev + 1 : prev));
-      }, 400);
+      }, 1200);
       return () => clearInterval(timer);
     }
   }, [isTicking]);
@@ -397,19 +424,42 @@ export default function App() {
   const statusMeta = selectedIncident ? getStatusColor(selectedIncident.status) : { bg: "", label: "" };
 
   return (
-    <div className="min-h-screen animated-gradient-bg text-slate-800 p-6 md:p-10 font-sans flex flex-col justify-between selection:bg-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-[#131932] via-[#1A2244] to-[#0F1428] text-slate-100 p-4 md:p-8 font-sans flex flex-col justify-between selection:bg-indigo-500/30 relative overflow-hidden cyber-grid">
       
+      {/* Background Glowing Auras (Vibrant corner/side splashes, leaving the center dark and readable) */}
+      <div className="absolute top-[-5%] left-[-5%] w-[35%] h-[35%] rounded-full bg-gradient-to-br from-cyan-400 via-transparent to-transparent blur-[85px] pointer-events-none opacity-55" />
+      <div className="absolute top-[25%] right-[-5%] w-[30%] h-[30%] rounded-full bg-gradient-to-tr from-pink-500 via-transparent to-transparent blur-[90px] pointer-events-none opacity-45" />
+      <div className="absolute bottom-[-5%] left-[-5%] w-[35%] h-[35%] rounded-full bg-gradient-to-tr from-indigo-500 via-transparent to-transparent blur-[85px] pointer-events-none opacity-55" />
+      <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] rounded-full bg-gradient-to-tl from-amber-400 via-transparent to-transparent blur-[80px] pointer-events-none opacity-50" />
+
       {/* Styles for dynamic custom keyframes */}
       <style>{`
-        @keyframes gradient-bg {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+        .cyber-grid {
+          background-image: radial-gradient(rgba(129, 140, 248, 0.05) 1px, transparent 1px);
+          background-size: 24px 24px;
         }
-        .animated-gradient-bg {
-          background: linear-gradient(-45deg, rgba(66, 133, 244, 0.03), rgba(219, 68, 85, 0.03), rgba(244, 180, 0, 0.03), rgba(15, 157, 88, 0.03));
-          background-size: 400% 400%;
-          animation: gradient-bg 20s ease infinite;
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.15; }
+          50% { opacity: 0.35; }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 4s ease-in-out infinite;
+        }
+        @keyframes splash-loader {
+          0% { left: -40%; width: 30%; }
+          50% { left: 40%; width: 50%; }
+          100% { left: 110%; width: 30%; }
+        }
+        .animate-splash-loader {
+          animation: splash-loader 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        @keyframes float-mobi {
+          0% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-8px) rotate(4deg) scale(1.04); }
+          100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .animate-float-mobi {
+          animation: float-mobi 4s ease-in-out infinite;
         }
         @keyframes pulse-thinking {
           0% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(66, 133, 244, 0.35)); }
@@ -427,9 +477,9 @@ export default function App() {
           100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(103, 58, 183, 0.35)); }
         }
         @keyframes pulse-escalated {
-          0% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(219, 68, 85, 0.5)); }
-          50% { transform: scale(1.1); filter: drop-shadow(0 0 35px rgba(219, 68, 85, 0.75)); }
-          100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(219, 68, 85, 0.5)); }
+          0% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(244, 63, 94, 0.5)); }
+          50% { transform: scale(1.1); filter: drop-shadow(0 0 35px rgba(244, 63, 94, 0.75)); }
+          100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(244, 63, 94, 0.5)); }
         }
         @keyframes pulse-closed {
           0% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(15, 157, 88, 0.3)); }
@@ -443,8 +493,63 @@ export default function App() {
         .animate-orb-closed { animation: pulse-closed 4s ease-in-out infinite; }
       `}</style>
 
+      {/* Boot Splash Screen */}
+      <AnimatePresence>
+        {showBootSplash && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+            className="fixed inset-0 bg-[#070912] z-[100] flex flex-col items-center justify-center pointer-events-auto"
+          >
+            {/* Ambient background aura (Vibrant splash of color) */}
+            <div className="absolute w-[550px] h-[550px] rounded-full bg-gradient-to-tr from-cyan-400/35 via-pink-500/20 to-transparent blur-[120px]" />
+            
+            <div className="relative flex flex-col items-center space-y-8 max-w-md px-8">
+              {/* Spinning & Floating Custom Logo (Bigger) */}
+              <div className="relative animate-float-mobi">
+                <svg className="h-28 w-28 drop-shadow-[0_0_25px_rgba(6,182,212,0.6)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="splash-logo-tri" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00F2FE" />
+                      <stop offset="50%" stopColor="#FF007F" />
+                      <stop offset="100%" stopColor="#9B51E0" />
+                    </linearGradient>
+                  </defs>
+                  <g stroke="url(#splash-logo-tri)" strokeWidth="8" strokeLinecap="round">
+                    <path d="M50 25 C65 40, 65 60, 50 75 C35 60, 35 40, 50 25 Z" transform="rotate(0 50 50)" />
+                    <path d="M50 25 C65 40, 65 60, 50 75 C35 60, 35 40, 50 25 Z" transform="rotate(120 50 50)" />
+                    <path d="M50 25 C65 40, 65 60, 50 75 C35 60, 35 40, 50 25 Z" transform="rotate(240 50 50)" />
+                  </g>
+                  <circle cx="50" cy="50" r="7" fill="#FFFFFF" />
+                </svg>
+              </div>
+
+              {/* Title & Catchphrase */}
+              <div className="text-center space-y-3">
+                <h2 className="font-outfit font-extrabold text-4xl tracking-widest text-white drop-shadow-md">ACIRP</h2>
+                <p className="text-xs font-mono tracking-[0.24em] text-cyan-400 uppercase font-bold leading-none">AI Grievance Operating System</p>
+                <p className="text-xs text-slate-200 font-sans italic mt-2.5 leading-normal font-semibold max-w-[280px]">
+                  "Here to serve. Watching the streets, helping the city."
+                </p>
+              </div>
+
+              {/* Taller, wider Loader */}
+              <div className="w-[280px] h-[5px] bg-slate-950 rounded-full overflow-hidden border border-white/10 relative">
+                <div className="absolute top-0 left-0 h-full w-[45%] bg-gradient-to-r from-cyan-400 via-pink-500 to-indigo-500 rounded-full animate-splash-loader" />
+              </div>
+
+              {/* Micro boot-logs */}
+              <div className="font-mono text-[9px] text-slate-400 uppercase tracking-widest h-4">
+                <span className="animate-pulse">Initializing Vision Engine...</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top Header bar */}
-      <header className="flex justify-between items-center max-w-7xl w-full mx-auto mb-8 border-b border-slate-200/40 pb-4">
+      <header className="flex justify-between items-center max-w-7xl w-full mx-auto mb-6 md:mb-8 border-b border-white/5 pb-4 z-10">
         <div className="flex items-center gap-3.5">
           {/* Custom Innovative Logo: The Intersecting Möbius Loop */}
           <svg className="h-8 w-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -464,10 +569,10 @@ export default function App() {
           </svg>
           
           <div className="flex flex-col text-left">
-            <h1 className="font-outfit font-extrabold text-lg tracking-wider text-slate-800 flex items-center gap-1.5 leading-none">
-              ACIRP <span className="text-[9px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full tracking-normal uppercase border border-slate-200">AI OS</span>
+            <h1 className="font-outfit font-extrabold text-lg tracking-wider text-slate-100 flex items-center gap-1.5 leading-none">
+              ACIRP <span className="text-[9px] bg-white/10 text-slate-300 font-bold px-2 py-0.5 rounded-full tracking-normal uppercase border border-white/5">AI OS</span>
             </h1>
-            <span className="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-widest mt-1">
+            <span className="text-[9px] font-sans font-bold text-slate-500 uppercase tracking-widest mt-1">
               Autonomous Civic Incident Resolution Platform
             </span>
           </div>
@@ -490,27 +595,27 @@ export default function App() {
       </header>
 
       {/* Main Core Mission Control Console Workspace */}
-      <main className="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start flex-1">
+      <main className="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start flex-1 mb-16 lg:mb-0">
         
         {/* LEFT COLUMN: Citizen File Terminal & Portal Registry Selector (4 cols) */}
-        <section className="lg:col-span-4 space-y-6">
+        <section className={`lg:col-span-4 space-y-6 ${activeMobileTab !== "terminal" && activeMobileTab !== "logs" ? "hidden lg:block" : ""}`}>
           
           {/* Card 1: Citizen File Terminal (Glassmorphism layout) */}
-          <div className="backdrop-blur-xl border border-white/50 bg-white/70 shadow-xl rounded-3xl p-5 space-y-4">
+          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-4 ${activeMobileTab === "logs" ? "hidden lg:block" : ""}`}>
             <h2 className="text-xs uppercase tracking-wider font-extrabold text-slate-400 flex items-center gap-1.5">
-              <Upload className="h-4 w-4 text-slate-400" /> 1. Citizen Submission Node
+              <Upload className="h-4 w-4 text-slate-500" /> 1. Citizen Submission Node
             </h2>
 
-            <form onSubmit={handleCreateIncident} className="space-y-3">
+            <form onSubmit={handleCreateIncident} className="space-y-3 text-left">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Complainant Name *</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Complainant Name *</label>
                 <input 
                   type="text"
                   placeholder="Enter your full name"
                   value={complainantName}
                   onChange={(e) => setComplainantName(e.target.value)}
                   required
-                  className="w-full text-xs p-2.5 border border-slate-200/80 bg-white rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2.5 border border-white/10 bg-slate-950/40 text-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500/50 placeholder-slate-600"
                 />
               </div>
 
@@ -521,7 +626,7 @@ export default function App() {
                     type="text" 
                     value={lat} 
                     onChange={(e) => setLat(e.target.value)} 
-                    className="w-full text-xs p-2 border border-slate-100 bg-slate-50/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 font-mono"
+                    className="w-full text-xs p-2 border border-white/5 bg-slate-950/20 text-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 font-mono"
                   />
                 </div>
                 <div className="space-y-1">
@@ -530,20 +635,21 @@ export default function App() {
                     type="text" 
                     value={lng} 
                     onChange={(e) => setLng(e.target.value)} 
-                    className="w-full text-xs p-2 border border-slate-100 bg-slate-50/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 font-mono"
+                    className="w-full text-xs p-2 border border-white/5 bg-slate-950/20 text-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 font-mono"
                   />
                 </div>
               </div>
 
-              <div className="border border-dashed border-slate-200 bg-white hover:border-blue-400 rounded-xl p-4 text-center cursor-pointer transition relative">
+              <div className="border border-dashed border-white/10 bg-slate-950/30 hover:border-blue-400/50 rounded-xl p-4 text-center cursor-pointer transition relative">
                 <input 
                   type="file" 
                   accept="image/*"
+                  value={imageFile ? undefined : ""}
                   onChange={(e) => setImageFile(e.target.files[0])}
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
-                <span className="text-xs font-semibold text-slate-500 flex justify-center items-center gap-1.5">
-                  <Upload className="h-4 w-4 text-slate-400" />
+                <span className="text-xs font-semibold text-slate-400 flex justify-center items-center gap-1.5">
+                  <Upload className="h-4 w-4 text-slate-500" />
                   {imageFile ? imageFile.name : "Select Hazard Photo"}
                 </span>
               </div>
@@ -551,7 +657,7 @@ export default function App() {
               <button 
                 type="submit" 
                 disabled={isSubmitting}
-                className="w-full bg-[#1A73E8] hover:bg-[#1557b0] text-white font-bold py-2 rounded-xl text-xs transition shadow-md shadow-blue-500/10"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-blue-500/10"
               >
                 {isSubmitting ? "Uploading petition..." : "File Complaint & Verify Location"}
               </button>
@@ -560,23 +666,24 @@ export default function App() {
 
           {/* Verification section */}
           {selectedIncident && selectedIncident.status === "VERIFYING" && (
-            <div className="backdrop-blur-xl border border-indigo-200 bg-indigo-50/30 shadow-lg rounded-3xl p-5 space-y-3">
-              <h2 className="text-xs uppercase tracking-wider font-extrabold text-indigo-600 flex items-center gap-1.5">
-                <UserCheck className="h-4 w-4 text-indigo-500" /> Verification Pending
+            <div className={`backdrop-blur-xl border border-indigo-500/10 bg-indigo-950/15 shadow-2xl rounded-3xl p-5 space-y-3 text-left ${activeMobileTab === "logs" ? "hidden lg:block" : ""}`}>
+              <h2 className="text-xs uppercase tracking-wider font-extrabold text-indigo-400 flex items-center gap-1.5">
+                <UserCheck className="h-4 w-4 text-indigo-400" /> Verification Pending
               </h2>
-              <p className="text-[11px] text-indigo-800 leading-normal">
+              <p className="text-[11px] text-indigo-200/80 leading-normal">
                 Municipal workers marked resolving task. Please upload a clear photo of the clean site to verify clearance.
               </p>
 
               <form onSubmit={handleVerifyResolution} className="space-y-2">
-                <div className="border border-dashed border-indigo-200 bg-white hover:border-indigo-400 rounded-xl p-3 text-center cursor-pointer transition relative">
+                <div className="border border-dashed border-indigo-500/20 bg-slate-950/30 hover:border-indigo-400/50 rounded-xl p-3 text-center cursor-pointer transition relative">
                   <input 
                     type="file" 
                     accept="image/*"
+                    value={verifyFile ? undefined : ""}
                     onChange={(e) => setVerifyFile(e.target.files[0])}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
-                  <span className="text-[10px] font-medium text-indigo-500">
+                  <span className="text-[10px] font-medium text-indigo-300/80">
                     {verifyFile ? verifyFile.name : "Select proof photo"}
                   </span>
                 </div>
@@ -592,14 +699,14 @@ export default function App() {
           )}
 
           {/* Card 2: Registry Database Selector */}
-          <div className="backdrop-blur-xl border border-white/50 bg-white/70 shadow-xl rounded-3xl p-5 space-y-3">
+          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-3 ${activeMobileTab === "logs" ? "hidden lg:block" : ""}`}>
             <h2 className="text-xs uppercase tracking-wider font-extrabold text-slate-400 flex items-center gap-1.5">
-              <Layers className="h-4 w-4 text-slate-400" /> Civic Incident Registry
+              <Layers className="h-4 w-4 text-slate-500" /> Civic Incident Registry
             </h2>
 
             <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
               {incidents.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-4">No logged incidents found.</p>
+                <p className="text-xs text-slate-500 text-center py-4">No logged incidents found.</p>
               ) : (
                 incidents.map((inc) => {
                   const active = inc.id === selectedIncId;
@@ -613,18 +720,18 @@ export default function App() {
                       }}
                       className={`w-full flex justify-between items-center text-xs p-2.5 rounded-xl transition text-left border ${
                         active 
-                          ? "bg-slate-900 border-slate-900 text-white shadow-md shadow-slate-950/10" 
-                          : "bg-white border-slate-100 hover:bg-slate-50 text-slate-700"
+                          ? "bg-blue-600/20 border-blue-500/30 text-white shadow-md shadow-blue-500/5" 
+                          : "bg-slate-950/30 border-white/5 hover:bg-slate-900/40 text-slate-300"
                       }`}
                     >
                       <div className="truncate pr-2">
-                        <p className={`font-bold ${active ? "text-white" : "text-slate-700"}`}>{inc.complainant_name}</p>
-                        <p className={`text-[10px] truncate ${active ? "text-slate-300" : "text-slate-400"}`}>{inc.id}</p>
+                        <p className={`font-bold ${active ? "text-white" : "text-slate-300"}`}>{inc.complainant_name}</p>
+                        <p className={`text-[10px] truncate ${active ? "text-blue-300" : "text-slate-500"}`}>{inc.id}</p>
                       </div>
                       <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded-full border ${
                         isClosed 
-                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" 
-                          : active ? "bg-white/20 border-white/30 text-white" : "bg-slate-100 border-slate-200 text-slate-500"
+                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                          : active ? "bg-blue-500/20 border-blue-500/30 text-blue-300" : "bg-slate-950/40 border-white/5 text-slate-400"
                       }`}>
                         {inc.status === "MONITORING" ? "PENDING" : inc.status}
                       </span>
@@ -636,23 +743,23 @@ export default function App() {
           </div>
 
           {/* Card 3: Simulator Controls console */}
-          <div className="backdrop-blur-xl border border-slate-200/80 bg-[#F8FAFC]/90 shadow-lg rounded-3xl p-5 space-y-3 relative overflow-hidden">
+          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-3 relative overflow-hidden ${activeMobileTab === "terminal" ? "hidden lg:block" : ""}`}>
             <h2 className="text-xs uppercase tracking-wider font-extrabold text-slate-400 flex items-center gap-1.5">
-              <Settings className="h-4 w-4 text-slate-400" /> Simulator Console
+              <Settings className="h-4 w-4 text-slate-500" /> Simulator Console
             </h2>
 
             <div className="space-y-3">
-              <div className="bg-white border border-slate-200 rounded-xl p-3 text-[11px] font-mono space-y-1.5 shadow-inner">
+              <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 text-[11px] font-mono space-y-1.5 shadow-inner">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Token:</span>
-                  <span className="font-semibold text-slate-800">{selectedIncident?.official_token || "None"}</span>
+                  <span className="text-slate-500">Token:</span>
+                  <span className="font-semibold text-slate-300">{selectedIncident?.official_token || "None"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Status:</span>
+                  <span className="text-slate-500">Status:</span>
                   <span className={`font-bold ${
-                    selectedIncident?.status === "CLOSED" ? "text-emerald-600" :
-                    selectedIncident?.status === "MONITORING" ? "text-amber-600 animate-pulse" :
-                    "text-slate-500"
+                    selectedIncident?.status === "CLOSED" ? "text-emerald-400" :
+                    selectedIncident?.status === "MONITORING" ? "text-amber-400 animate-pulse" :
+                    "text-slate-400"
                   }`}>
                     {selectedIncident?.status === "MONITORING" ? "PENDING" : selectedIncident?.status || "NONE"}
                   </span>
@@ -663,19 +770,19 @@ export default function App() {
                 <div className="space-y-1.5 mt-2">
                   <button 
                     onClick={handleMarkResolved}
-                    className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold py-1.5 rounded-lg text-[10px] transition shadow-sm"
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 font-bold py-1.5 rounded-lg text-[10px] transition shadow-sm"
                   >
                     Force Ticket Resolved
                   </button>
                   <button 
                     onClick={handleTriggerSLABreach}
-                    className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold py-1.5 rounded-lg text-[10px] transition shadow-sm"
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 font-bold py-1.5 rounded-lg text-[10px] transition shadow-sm"
                   >
                     Fast-Forward 24h
                   </button>
                   <button 
                     onClick={handleSimulateCrash}
-                    className="w-full bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold py-1.5 rounded-lg text-[10px] transition shadow-sm"
+                    className="w-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 font-bold py-1.5 rounded-lg text-[10px] transition shadow-sm"
                   >
                     Simulate Portal Crash
                   </button>
@@ -687,10 +794,36 @@ export default function App() {
         </section>
 
         {/* RIGHT COLUMN: The AI Main Character Node & Brain Execution Console (8 cols) */}
-        <section className="lg:col-span-8 space-y-6">
+        <section className={`lg:col-span-8 space-y-6 ${activeMobileTab !== "brain" && activeMobileTab !== "logs" ? "hidden lg:block" : ""}`}>
           
-          {/* Main Card: Hero Agent Mission Control Console */}
-          <div className="backdrop-blur-xl border border-white/50 bg-white/70 shadow-2xl rounded-3xl p-6 md:p-8 space-y-8 relative overflow-hidden">
+          <div className="relative overflow-visible">
+            {/* Soft Radial Backlight Aura behind Card 4 (Pulsating) */}
+            {selectedIncident && (
+              <div 
+                className="absolute inset-0 -m-10 pointer-events-none transition-all duration-1000 animate-pulse-slow blur-[80px] opacity-40 z-0"
+                style={{
+                  background: `radial-gradient(circle at center, ${
+                    selectedIncident.status === "CLOSED" ? "rgba(16,185,129,0.35)" :
+                    selectedIncident.status === "ESCALATED" ? "rgba(244,63,94,0.5)" :
+                    selectedIncident.status === "VERIFYING" ? "rgba(139,92,246,0.4)" :
+                    selectedIncident.status === "MONITORING" ? "rgba(245,158,11,0.4)" :
+                    "rgba(99,102,241,0.4)"
+                  } 0%, transparent 60%)`
+                }}
+              />
+            )}
+
+            {/* Main Card: Hero Agent Mission Control Console */}
+          <div className={`backdrop-blur-xl border bg-[#0F1426]/40 shadow-2xl rounded-3xl p-6 md:p-8 space-y-8 relative overflow-hidden transition-all duration-1000 ${
+            activeMobileTab !== "brain" ? "hidden lg:block" : ""
+          } ${
+            !selectedIncident ? "border-white/5 shadow-black/40" :
+            selectedIncident.status === "CLOSED" ? "border-emerald-500/25 shadow-emerald-500/5 ring-1 ring-emerald-500/10" :
+            selectedIncident.status === "ESCALATED" ? "border-rose-500/30 shadow-rose-500/10 ring-1 ring-rose-500/10" :
+            selectedIncident.status === "VERIFYING" ? "border-purple-500/30 shadow-purple-500/10 ring-1 ring-purple-500/10" :
+            selectedIncident.status === "MONITORING" ? "border-amber-500/25 shadow-amber-500/5 ring-1 ring-amber-500/10" :
+            "border-blue-500/30 shadow-blue-500/10 ring-1 ring-blue-500/10"
+          }`}>
             
             {/* Storyteller loading overlay */}
             <AnimatePresence>
@@ -729,19 +862,19 @@ export default function App() {
             </AnimatePresence>
 
             {/* Decision Flow Node Line */}
-            <div className="w-full border-b border-slate-100 pb-4">
-              <div className="flex justify-between items-center text-[9px] uppercase font-bold tracking-wider text-slate-400">
-                <span className={selectedIncident?.status === "DETECTED" ? "text-blue-500" : ""}>1. Sensing</span>
-                <ArrowRight className="h-3 w-3" />
-                <span className={selectedIncident?.status === "PLANNED" ? "text-blue-500" : ""}>2. Routing</span>
-                <ArrowRight className="h-3 w-3" />
-                <span className={selectedIncident?.status === "SUBMITTED" ? "text-blue-500" : ""}>3. Submission</span>
-                <ArrowRight className="h-3 w-3" />
-                <span className={selectedIncident?.status === "MONITORING" ? "text-amber-500 animate-pulse" : ""}>4. Monitoring</span>
-                <ArrowRight className="h-3 w-3" />
-                <span className={selectedIncident?.status === "VERIFYING" ? "text-indigo-500 animate-pulse" : ""}>5. Verification</span>
-                <ArrowRight className="h-3 w-3" />
-                <span className={selectedIncident?.status === "CLOSED" ? "text-emerald-500" : ""}>6. Resolved</span>
+            <div className="w-full border-b border-white/5 pb-4">
+              <div className="flex justify-between items-center text-[9px] uppercase font-bold tracking-wider text-slate-500">
+                <span className={selectedIncident?.status === "DETECTED" ? "text-blue-400" : ""}>1. Sensing</span>
+                <ArrowRight className="h-3 w-3 text-slate-600" />
+                <span className={selectedIncident?.status === "PLANNED" ? "text-blue-400" : ""}>2. Routing</span>
+                <ArrowRight className="h-3 w-3 text-slate-600" />
+                <span className={selectedIncident?.status === "SUBMITTED" ? "text-blue-400" : ""}>3. Submission</span>
+                <ArrowRight className="h-3 w-3 text-slate-600" />
+                <span className={selectedIncident?.status === "MONITORING" ? "text-amber-400 animate-pulse" : ""}>4. Monitoring</span>
+                <ArrowRight className="h-3 w-3 text-slate-600" />
+                <span className={selectedIncident?.status === "VERIFYING" ? "text-indigo-400 animate-pulse" : ""}>5. Verification</span>
+                <ArrowRight className="h-3 w-3 text-slate-600" />
+                <span className={selectedIncident?.status === "CLOSED" ? "text-emerald-400" : ""}>6. Resolved</span>
               </div>
             </div>
 
@@ -749,21 +882,21 @@ export default function App() {
             <div className="flex flex-col items-center justify-center space-y-4 py-4">
               
               <div className={`h-28 w-28 rounded-full bg-gradient-to-tr flex items-center justify-center text-white relative shadow-2xl transition duration-700 ${
-                !selectedIncident ? "from-slate-400 to-slate-500" :
-                selectedIncident.status === "CLOSED" ? "from-emerald-400 to-teal-500 animate-orb-closed" :
-                selectedIncident.status === "ESCALATED" ? "from-rose-500 to-red-600 animate-orb-escalated" :
-                selectedIncident.status === "VERIFYING" ? "from-indigo-500 to-purple-600 animate-orb-verifying" :
-                selectedIncident.status === "MONITORING" ? "from-amber-400 to-yellow-500 animate-orb-monitoring" :
+                !selectedIncident ? "from-slate-700 to-slate-800" :
+                selectedIncident.status === "CLOSED" ? "from-emerald-500 to-teal-600 animate-orb-closed" :
+                selectedIncident.status === "ESCALATED" ? "from-rose-600 to-red-700 animate-orb-escalated" :
+                selectedIncident.status === "VERIFYING" ? "from-indigo-600 to-purple-700 animate-orb-verifying" :
+                selectedIncident.status === "MONITORING" ? "from-amber-500 to-yellow-600 animate-orb-monitoring" :
                 "from-blue-500 via-purple-500 to-rose-500 animate-orb-thinking"
               }`}>
                 {/* Visual feedback icon inside Orb */}
-                <div className="absolute inset-1.5 rounded-full bg-slate-950/20 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center">
+                <div className="absolute inset-1.5 rounded-full bg-[#0B0F19]/40 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center">
                   {!selectedIncident ? (
                     <BrainCircuit className="h-8 w-8 text-white opacity-40 animate-pulse" />
                   ) : (
                     <>
-                      <span className="text-[8px] font-bold tracking-wider uppercase text-white/60 mb-0.5">Confidence</span>
-                      <span className="font-outfit font-extrabold text-lg leading-none">
+                      <span className="text-[8px] font-bold tracking-wider uppercase text-white/50 mb-0.5">Confidence</span>
+                      <span className="font-outfit font-extrabold text-lg leading-none text-white">
                         <ConfidenceCounter target={selectedIncident.confidence} />
                       </span>
                     </>
@@ -772,20 +905,30 @@ export default function App() {
               </div>
 
               {/* Conversational thoughts status bubble */}
-              <div className="text-center max-w-md">
-                <span className="text-[10px] uppercase tracking-wider font-extrabold text-blue-500 px-2 py-0.5 bg-blue-50 rounded-full">🧠 Agent Status</span>
-                <p className="font-outfit font-bold text-sm text-slate-700 leading-relaxed mt-2">
-                  {getAgentThought(selectedIncident?.status)}
-                </p>
+              <div className="text-center max-w-md space-y-2">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-blue-400 px-2.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded-full">🧠 Agent Status</span>
+                  <p className="font-outfit font-bold text-sm text-slate-200 leading-relaxed mt-2.5">
+                    {getAgentThought(selectedIncident?.status)}
+                  </p>
+                </div>
+                {selectedIncident && (
+                  <div className="text-[11px] text-slate-400 font-sans tracking-wide leading-normal bg-slate-950/40 border border-white/5 rounded-xl p-2.5 max-w-xs mx-auto text-left">
+                    <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">Reason Log:</span>
+                    <span className="italic">
+                      "{brainDecision?.reason || "Aggregating environmental context, verifying visual sensor feedback loops..."}"
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Strategic Details Workflow & Decision card */}
             {selectedIncident && (
-              <div className="space-y-6 pt-6 border-t border-slate-100">
+              <div className="space-y-6 pt-6 border-t border-white/5">
                 {/* AI Visual Evidence Comparison Panel */}
-                <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-3">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block text-left">
+                <div className="p-4 rounded-2xl border border-white/5 bg-slate-950/20 space-y-3">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block text-left">
                     {selectedIncident.status === "CLOSED" || selectedIncident.status === "VERIFYING" 
                       ? "Visual Verification: Before vs After Resolution" 
                       : "Sensing Input: Visual Evidence Verified"}
@@ -793,41 +936,41 @@ export default function App() {
                   
                   <div className="flex gap-4 items-center justify-center">
                     <div className="flex flex-col items-center space-y-1.5 flex-1 max-w-[160px]">
-                      <div className="w-full h-24 bg-slate-100 border border-slate-200/60 rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative">
+                      <div className="w-full h-24 bg-slate-950/50 border border-white/5 rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative">
                         <img 
                           src={`${API_BASE}${selectedIncident.image_before_url}`} 
                           alt="Before" 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover opacity-80"
                         />
-                        <span className="absolute bottom-1.5 left-1.5 bg-slate-900/60 backdrop-blur-sm text-white text-[8px] font-bold px-1 py-0.5 rounded uppercase">Before</span>
+                        <span className="absolute bottom-1.5 left-1.5 bg-slate-950/80 backdrop-blur-sm text-white text-[8px] font-bold px-1 py-0.5 rounded uppercase">Before</span>
                       </div>
                     </div>
 
                     {(selectedIncident.status === "CLOSED" || selectedIncident.status === "VERIFYING") && (
                       <>
-                        <ArrowRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
+                        <ArrowRight className="h-4 w-4 text-slate-600 flex-shrink-0" />
                         <div className="flex flex-col items-center space-y-1.5 flex-1 max-w-[160px]">
-                          <div className="w-full h-24 bg-slate-100 border border-slate-200/60 rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative">
+                          <div className="w-full h-24 bg-slate-950/50 border border-white/5 rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative">
                             {selectedIncident.image_after_url ? (
                               <img 
                                 src={`${API_BASE}${selectedIncident.image_after_url}`} 
                                 alt="After" 
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover opacity-80"
                               />
                             ) : (
-                              <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider text-center p-2 leading-tight flex flex-col items-center justify-center h-full">
+                              <div className="text-[9px] text-slate-500 font-bold uppercase tracking-wider text-center p-2 leading-tight flex flex-col items-center justify-center h-full">
                                 {selectedIncident.status === "CLOSED" ? (
                                   selectedIncident.timeline?.some(event => event.decision === "Portal submission failed") ? (
                                     <>
-                                      <AlertTriangle className="h-4.5 w-4.5 text-rose-500 mb-1 animate-pulse" />
+                                      <AlertTriangle className="h-4.5 w-4.5 text-rose-400 mb-1 animate-pulse" />
                                       <span>Website Failed</span>
-                                      <span className="text-[7px] text-slate-400 lowercase mt-0.5 font-normal">(No Photo Proof)</span>
+                                      <span className="text-[7px] text-slate-600 lowercase mt-0.5 font-normal">(No Photo Proof)</span>
                                     </>
                                   ) : (
                                     <>
-                                      <AlertTriangle className="h-4.5 w-4.5 text-amber-500 mb-1 animate-pulse" />
+                                      <AlertTriangle className="h-4.5 w-4.5 text-amber-400 mb-1 animate-pulse" />
                                       <span>Escalated Close</span>
-                                      <span className="text-[7px] text-slate-400 lowercase mt-0.5 font-normal">(No Photo Proof)</span>
+                                      <span className="text-[7px] text-slate-600 lowercase mt-0.5 font-normal">(No Photo Proof)</span>
                                     </>
                                   )
                                 ) : (
@@ -835,7 +978,7 @@ export default function App() {
                                 )}
                               </div>
                             )}
-                            <span className="absolute bottom-1.5 left-1.5 bg-indigo-900/60 backdrop-blur-sm text-white text-[8px] font-bold px-1 py-0.5 rounded uppercase">After</span>
+                            <span className="absolute bottom-1.5 left-1.5 bg-indigo-950/80 backdrop-blur-sm text-white text-[8px] font-bold px-1 py-0.5 rounded uppercase">After</span>
                           </div>
                         </div>
                       </>
@@ -847,36 +990,36 @@ export default function App() {
                   {/* Card A: Strategy Route details */}
                   <div className={`p-4 rounded-2xl border flex flex-col justify-between space-y-2 transition-all duration-500 ${
                     selectedIncident.status === "PLANNED" 
-                      ? "bg-blue-50/50 border-blue-200 shadow-md shadow-blue-500/5 ring-1 ring-blue-500/10" 
-                      : "border-slate-100 bg-slate-50/50"
+                      ? "bg-blue-600/10 border-blue-500/30 shadow-md shadow-blue-500/5 ring-1 ring-blue-500/10" 
+                      : "border-white/5 bg-slate-950/20"
                   }`}>
                     <div>
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Current Strategy Route</span>
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Current Strategy Route</span>
                         {selectedIncident.status === "PLANNED" && (
-                          <span className="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold animate-pulse">Chosen by AI</span>
+                          <span className="text-[9px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full font-bold animate-pulse">Chosen by AI</span>
                         )}
                       </div>
-                      <div className="font-bold text-sm text-slate-800 mt-1">
+                      <div className="font-bold text-sm text-slate-200 mt-1">
                         {selectedIncident?.current_strategy?.name || "Routing Queue..."}
                       </div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">
+                      <div className="text-[10px] text-slate-400 mt-0.5">
                         Dept: {selectedIncident?.current_strategy?.department || "N/A"} | SLA: {selectedIncident?.current_strategy?.sla_hours || 0}h
                       </div>
                     </div>
 
                     <div className="pt-2">
-                      <span className="text-[9px] uppercase font-bold text-slate-400">Escalation Path:</span>
-                      <div className="flex gap-1.5 mt-1 items-center overflow-x-auto text-[9px] text-slate-500">
+                      <span className="text-[9px] uppercase font-bold text-slate-500">Escalation Path:</span>
+                      <div className="flex gap-1.5 mt-1 items-center overflow-x-auto text-[9px] text-slate-400">
                         {selectedIncident?.current_strategy?.escalation_path?.map((step, index) => (
                           <div key={index} className="flex items-center gap-1">
                             <span className={`px-2 py-0.5 rounded-full border ${
                               selectedIncident.escalation_level === index + 1
-                                ? "bg-rose-50 border-rose-200 text-rose-600 font-bold" 
-                                : "bg-white border-slate-200"
+                                ? "bg-rose-500/20 border-rose-500/30 text-rose-300 font-bold" 
+                                : "bg-slate-950/40 border-white/5"
                             }`}>{step}</span>
                             {index < selectedIncident.current_strategy.escalation_path.length - 1 && (
-                              <ArrowRight className="h-2 w-2 text-slate-300" />
+                              <ArrowRight className="h-2 w-2 text-slate-600" />
                             )}
                           </div>
                         ))}
@@ -884,70 +1027,71 @@ export default function App() {
                     </div>
                   </div>
 
-                {/* Card B: Next Action Details */}
-                <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Next Planned Action</span>
-                    {selectedIncident.status === "CLOSED" && !selectedIncident.image_after_url ? (
-                      <div className="mt-1 space-y-1.5">
-                        <p className="text-xs text-slate-600 font-medium">{brainDecision?.next_action}</p>
-                        <div className="bg-amber-50 border border-amber-100 p-2.5 rounded-lg text-[9px] text-amber-800 space-y-0.5">
-                          <p className="font-bold">Suggested Dispatch Contact:</p>
-                          <p className="font-semibold">{HELPLINES[selectedIncident.issue_type]?.dept || "Public Works Department"}</p>
-                          <p className="font-bold font-mono">📞 {HELPLINES[selectedIncident.issue_type]?.phone || "080-2223-1800"}</p>
+                  {/* Card B: Next Action Details */}
+                  <div className="p-4 rounded-2xl border border-white/5 bg-slate-950/20 flex flex-col justify-between text-left">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500">Next Planned Action</span>
+                      {selectedIncident.status === "CLOSED" && !selectedIncident.image_after_url ? (
+                        <div className="mt-1 space-y-1.5">
+                          <p className="text-xs text-slate-300 font-medium">{brainDecision?.next_action}</p>
+                          <div className="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg text-[9px] text-amber-300 space-y-0.5">
+                            <p className="font-bold">Suggested Dispatch Contact:</p>
+                            <p className="font-semibold">{HELPLINES[selectedIncident.issue_type]?.dept || "Public Works Department"}</p>
+                            <p className="font-bold font-mono">📞 {HELPLINES[selectedIncident.issue_type]?.phone || "080-2223-1800"}</p>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-600 font-medium mt-1">{brainDecision?.next_action || "Waiting for initialization"}</p>
-                    )}
+                      ) : (
+                        <p className="text-xs text-slate-300 font-medium mt-1">{brainDecision?.next_action || "Waiting for initialization"}</p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 pt-4">
+                      {selectedIncident && ["SUBMITTED", "MONITORING", "VERIFYING", "ESCALATED", "CLOSED"].includes(selectedIncident.status) && (
+                        <a 
+                          href={`${API_BASE}/api/incidents/${selectedIncident.id}/download-form`}
+                          download
+                          className="flex-1 text-center bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-2 rounded-xl text-xs transition border border-white/5 shadow-sm"
+                        >
+                          Download Petition
+                        </a>
+                      )}
+                      {selectedIncident && selectedIncident.status === "PLANNED" && (
+                        <button 
+                          onClick={handleTriggerTick}
+                          disabled={isTicking}
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-blue-500/10 disabled:opacity-50"
+                        >
+                          <Zap className="h-3.5 w-3.5 text-white" />
+                          File Official Petition
+                        </button>
+                      )}
+                      {brainDecision && (
+                        <button 
+                          onClick={() => setShowTrace(true)} 
+                          className="border border-white/5 hover:bg-white/5 text-slate-400 font-bold py-2 px-3 rounded-xl text-xs transition"
+                        >
+                          Trace
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex gap-2 pt-4">
-                    {selectedIncident && ["SUBMITTED", "MONITORING", "VERIFYING", "ESCALATED", "CLOSED"].includes(selectedIncident.status) && (
-                      <a 
-                        href={`${API_BASE}/api/incidents/${selectedIncident.id}/download-form`}
-                        download
-                        className="flex-1 text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition border border-slate-200 shadow-sm"
-                      >
-                        Download Petition
-                      </a>
-                    )}
-                    {selectedIncident && selectedIncident.status === "PLANNED" && (
-                      <button 
-                        onClick={handleTriggerTick}
-                        disabled={isTicking}
-                        className="flex-1 flex items-center justify-center gap-1.5 bg-[#1A73E8] hover:bg-[#1557b0] text-white font-bold py-2 rounded-xl text-xs transition shadow-md shadow-blue-500/10 disabled:opacity-50"
-                      >
-                        <Zap className="h-3.5 w-3.5 text-white" />
-                        File Official Petition
-                      </button>
-                    )}
-                    {brainDecision && (
-                      <button 
-                        onClick={() => setShowTrace(true)} 
-                        className="border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2 px-3 rounded-xl text-xs transition"
-                      >
-                        Trace
-                      </button>
-                    )}
-                  </div>
                 </div>
-
               </div>
-            </div>
-          )}
+            )}
           </div>
+        </div>
 
           {/* Card: Standardized Timeline entries with expand log blocks */}
-          <div className="premium-card rounded-2xl p-6 bg-white space-y-4">
+          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-4 ${activeMobileTab !== "logs" ? "hidden lg:block" : ""}`}>
             <h3 className="text-xs uppercase tracking-wider font-bold text-slate-400 flex items-center gap-1.5">
-              <Radio className="h-4 w-4 text-slate-400" /> Agent Activity Feed (Timeline)
+              <Radio className="h-4 w-4 text-slate-500" /> Agent Activity Feed (Timeline)
             </h3>
 
             {!selectedIncident?.timeline || selectedIncident.timeline.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">No logs generated. Initiate complaint above.</p>
+              <p className="text-xs text-slate-500 py-4 text-center">No logs generated. Initiate complaint above.</p>
             ) : (
-              <div className="relative pl-4 border-l border-slate-100 space-y-4 max-h-[160px] overflow-y-auto pr-1">
+              <div className="relative pl-4 border-l border-white/5 space-y-4 max-h-[160px] overflow-y-auto pr-1">
                 <AnimatePresence>
                   {selectedIncident?.timeline?.map((event, idx) => (
                     <motion.div 
@@ -958,22 +1102,22 @@ export default function App() {
                       className="relative group text-xs"
                     >
                       {/* Timeline icon node */}
-                      <span className="absolute -left-[25px] top-0 h-5 w-5 rounded-full border border-slate-100 bg-white flex items-center justify-center text-slate-500 shadow-sm group-hover:border-blue-400 transition">
+                      <span className="absolute -left-[25px] top-0 h-5 w-5 rounded-full border border-white/5 bg-slate-950 flex items-center justify-center text-slate-400 shadow-sm group-hover:border-blue-400 transition">
                         {STAGE_ICONS[event.stage] || <Layers className="h-3 w-3" />}
                       </span>
 
                       <div className="flex justify-between items-center">
-                        <span className="text-[9px] font-mono text-slate-400">{event.timestamp}</span>
-                        <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                        <span className="text-[9px] font-mono text-slate-500">{event.timestamp}</span>
+                        <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-slate-950/40 text-slate-400 border border-white/5">
                           {event.stage}
                         </span>
                       </div>
 
-                      <div className="mt-1 bg-slate-50/50 border border-slate-100/50 rounded-xl p-3 hover:bg-slate-50 transition cursor-pointer"
+                      <div className="mt-1 bg-slate-950/30 border border-white/5 rounded-xl p-3 hover:bg-slate-900/40 transition cursor-pointer text-left"
                            onClick={() => setExpandedLogIdx(expandedLogIdx === idx ? null : idx)}>
                         <div className="flex justify-between items-center">
-                          <span className="font-semibold text-slate-700">{event.decision}</span>
-                          <span className="text-[10px] text-blue-500 font-bold">{event.confidence}</span>
+                          <span className="font-semibold text-slate-200">{event.decision}</span>
+                          <span className="text-[10px] text-blue-400 font-bold">{event.confidence}</span>
                         </div>
                         
                         {/* Expandable reasons / next actions logs */}
@@ -981,10 +1125,10 @@ export default function App() {
                           <motion.div 
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
-                            className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 space-y-1.5"
+                            className="mt-2 pt-2 border-t border-white/5 text-[10px] text-slate-400 space-y-1.5"
                           >
                             <p><strong>Reason:</strong> {event.reason}</p>
-                            <p className="text-emerald-600 font-mono"><strong>Next Step:</strong> {event.next_action}</p>
+                            <p className="text-emerald-400 font-mono"><strong>Next Step:</strong> {event.next_action}</p>
                           </motion.div>
                         )}
                       </div>
@@ -1009,7 +1153,7 @@ export default function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => { setSelectedIncId(""); setSelectedIncident(null); }}
-              className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm pointer-events-auto"
+              className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm pointer-events-auto"
             />
 
             {/* Slide-over panel content */}
@@ -1018,28 +1162,31 @@ export default function App() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-sm border-l border-slate-100 bg-white/95 backdrop-blur-md shadow-2xl h-full p-6 flex flex-col justify-between overflow-y-auto z-10"
+              className="relative w-full max-w-sm border-l border-rose-500/20 bg-[#16111C]/90 backdrop-blur-xl shadow-[-20px_0_40px_rgba(244,63,94,0.08)] h-full p-6 flex flex-col justify-between overflow-y-auto z-10 text-left"
             >
-              <div className="space-y-6 text-left">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="space-y-6">
+                <div className="flex justify-between items-center border-b border-white/5 pb-3">
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-rose-500">Human Interaction Required</span>
-                    <h2 className="font-outfit font-bold text-sm text-slate-800 mt-0.5">Approve Agent Escalation</h2>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-rose-400">Human Interaction Required</span>
+                    <h2 className="font-outfit font-bold text-sm text-slate-100 mt-0.5">Approve Agent Escalation</h2>
                   </div>
                   <button 
                     onClick={() => { setSelectedIncId(""); setSelectedIncident(null); }} 
-                    className="text-slate-400 hover:text-slate-600"
+                    className="text-slate-400 hover:text-slate-200"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="p-3 bg-rose-50/50 border border-rose-100 rounded-xl text-xs leading-relaxed text-slate-600">
-                    <strong>Notice:</strong> The SLA deadline has expired or portal submission timed out. To proceed, the AI agent is requesting direct human approval to initiate the escalation strategy.
+                  <div className="p-3.5 bg-rose-500/5 border border-rose-500/20 rounded-xl text-xs leading-relaxed text-rose-200/90 space-y-1.5">
+                    <p className="font-bold text-rose-400 uppercase tracking-widest text-[9px]">Trigger: {getEscalationReason()}</p>
+                    <p className="text-slate-300">
+                      The active incident has met threshold limits. Direct human approval is required to initiate the next escalation path level.
+                    </p>
                   </div>
 
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs space-y-1.5 leading-normal">
+                  <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 text-xs space-y-1.5 leading-normal text-slate-300">
                     <p><strong>Department Route:</strong> {selectedIncident.current_strategy?.department}</p>
                     <p><strong>Escalation Target:</strong> {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Commissioner"}</p>
                     <p><strong>Current Level:</strong> Tier {selectedIncident.escalation_level + 1} of {selectedIncident.current_strategy?.escalation_path?.length}</p>
@@ -1048,19 +1195,19 @@ export default function App() {
 
                 {/* Twitter composer prefilled display card */}
                 {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] === "Social Escalation" ? (
-                  <div className="bg-sky-50 border border-sky-100 rounded-xl p-3 space-y-2 text-left">
-                    <div className="text-[9px] font-bold text-sky-600 uppercase tracking-wider flex items-center gap-1">
+                  <div className="bg-sky-500/5 border border-sky-500/20 rounded-xl p-3 space-y-2">
+                    <div className="text-[9px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1">
                       <Radio className="h-3 w-3 text-sky-400 animate-pulse" /> Twitter/X Escalation Draft
                     </div>
-                    <div className="bg-white border border-slate-100 rounded-lg p-2.5 text-[11px] text-slate-700 shadow-sm font-sans space-y-1.5">
+                    <div className="bg-slate-950/60 border border-white/5 rounded-lg p-2.5 text-[11px] text-slate-200 shadow-sm font-sans space-y-1.5">
                       <div className="flex gap-1.5 items-center">
                         <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[8px] font-bold text-white font-mono">A</div>
                         <div>
-                          <div className="font-bold text-slate-800 text-[10px] leading-tight">ACIRP Citizen Node</div>
-                          <div className="text-[8px] text-slate-400">@acirp_civic</div>
+                          <div className="font-bold text-slate-200 text-[10px] leading-tight">ACIRP Citizen Node</div>
+                          <div className="text-[8px] text-slate-500">@acirp_civic</div>
                         </div>
                       </div>
-                      <p className="leading-relaxed text-slate-600">
+                      <p className="leading-relaxed text-slate-300">
                         🚨 ESCALATION: Civic {selectedIncident.issue_type} unresolved at coordinates {selectedIncident.latitude}, {selectedIncident.longitude} for {selectedIncident.current_strategy.sla_hours}h. Ref: {selectedIncident.official_token || "BBMP-REF"}. Urgent action required @BBMPCOMM @citizen_alert. #CivicResolve
                       </p>
                     </div>
@@ -1074,11 +1221,11 @@ export default function App() {
                     </a>
                   </div>
                 ) : (
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1.5 text-left">
+                  <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 space-y-1.5">
                     <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                       📞 Planned Action Target Details
                     </div>
-                    <div className="text-[11px] text-slate-700 leading-normal space-y-1">
+                    <div className="text-[11px] text-slate-300 leading-normal space-y-1">
                       <p><strong>Authority Name:</strong> {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Chief"}</p>
                       <p><strong>Action Type:</strong> Official Municipal Dispatch Request & SLA Override</p>
                       <p><strong>Automatic Notice:</strong> Send formal report template directly via API.</p>
@@ -1091,7 +1238,7 @@ export default function App() {
                   <a 
                     href={`${API_BASE}/api/incidents/${selectedIncident.id}/download-escalation-letter`}
                     download
-                    className="w-full flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition border border-slate-200 shadow-sm pointer-events-auto"
+                    className="w-full flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-2 rounded-xl text-xs transition border border-white/5 shadow-sm pointer-events-auto"
                   >
                     📥 Download Escalation Letter (HTML)
                   </a>
@@ -1099,13 +1246,13 @@ export default function App() {
                 <div className="flex gap-2 w-full">
                   <button 
                     onClick={() => { setSelectedIncId(""); setSelectedIncident(null); }} 
-                    className="flex-1 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2 rounded-xl text-xs transition"
+                    className="flex-1 border border-white/5 hover:bg-white/5 text-slate-400 font-bold py-2 rounded-xl text-xs transition"
                   >
                     Dismiss
                   </button>
                   <button 
                     onClick={handleApproveEscalation}
-                    className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 rounded-xl text-xs transition shadow-md shadow-rose-500/20"
+                    className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-rose-500/20"
                   >
                     Approve Escalation
                   </button>
@@ -1116,63 +1263,21 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Popover overlay modal detailing reasoning trace details */}
-      {showTrace && brainDecision && (
-        <div className="fixed inset-0 bg-slate-950/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-100 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="font-outfit font-bold text-sm text-slate-800 flex items-center gap-1.5">
-                <BrainCircuit className="h-4.5 w-4.5 text-[#1A73E8]" /> Decision Reasoning Trace
-              </h3>
-              <button onClick={() => setShowTrace(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold"><X className="h-4.5 w-4.5" /></button>
-            </div>
-            
-            <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
-              <div>
-                <span className="text-slate-400 font-bold uppercase text-[9px] block">Current Goal Context:</span>
-                <p className="font-semibold text-slate-800">{brainDecision.goal}</p>
-              </div>
-              <div>
-                <span className="text-slate-400 font-bold uppercase text-[9px] block">Semantic Evaluation Logs:</span>
-                <pre className="p-3 bg-slate-50 border border-slate-100 rounded-xl font-mono text-[9px] text-slate-500 leading-normal overflow-x-auto whitespace-pre-wrap">
-                  [REASONING EVALUATION ENGINE]{"\n"}
-                  - Active State: {brainDecision.current_state}{"\n"}
-                  - Selected Strategy: {brainDecision.chosen_strategy.name}{"\n"}
-                  - Target Dept: {brainDecision.chosen_strategy.department}{"\n"}
-                  - Strategy SLA Window: {brainDecision.chosen_strategy.sla_hours} hours{"\n"}
-                  - Execution Reason: "{brainDecision.reason}"{"\n"}
-                  - Decision Confidence: {brainDecision.confidence * 100}%
-                </pre>
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button 
-                onClick={() => setShowTrace(false)}
-                className="bg-[#1A73E8] hover:bg-[#1557b0] text-white font-bold py-1.5 px-4 rounded-xl text-xs transition"
-              >
-                Close Trace
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showPortalCrashDialog && selectedIncident && (
-        <div className="fixed inset-0 bg-slate-950/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-100 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl text-left">
-            <div className="flex items-center gap-2 text-rose-600 border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/5 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl text-left">
+            <div className="flex items-center gap-2 text-rose-400 border-b border-white/5 pb-3">
               <AlertTriangle className="h-5 w-5 animate-pulse" />
-              <h3 className="font-outfit font-bold text-sm text-slate-800">
+              <h3 className="font-outfit font-bold text-sm text-slate-100">
                 Government Portal Offline (HTTP 504)
               </h3>
             </div>
             
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               The autonomous agent encountered a gateway connection timeout while submitting the petition to the municipal portal. Portal database integration has failed.
             </p>
 
-            <div className="bg-rose-50 border border-rose-100 text-rose-800 text-xs p-4 rounded-xl space-y-2">
+            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs p-4 rounded-xl space-y-2">
               <p><strong>Emergency Dispatch Contact Suggestion:</strong></p>
               <p className="font-semibold">Dept: {HELPLINES[selectedIncident.issue_type]?.dept || "Public Works Department"}</p>
               <p className="text-sm font-bold font-mono">📞 Hotline: {HELPLINES[selectedIncident.issue_type]?.phone || "080-2223-1800"}</p>
@@ -1197,20 +1302,20 @@ export default function App() {
       )}
 
       {showHelplineDialog && (
-        <div className="fixed inset-0 bg-slate-950/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-100 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center gap-2 text-blue-600 border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/5 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl text-left">
+            <div className="flex items-center gap-2 text-blue-400 border-b border-white/5 pb-3">
               <Phone className="h-5 w-5" />
-              <h3 className="font-outfit font-bold text-sm text-slate-800">
+              <h3 className="font-outfit font-bold text-sm text-slate-100">
                 Direct Department Helpline Suggestion
               </h3>
             </div>
             
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               All digital escalation channels have been fully exhausted. The agent has successfully logged the SLA breach and composed public alerts. Please contact the direct department helpline for immediate manual dispatch:
             </p>
             
-            <div className="bg-blue-50 border border-blue-100 text-blue-800 text-xs p-4 rounded-xl space-y-2">
+            <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs p-4 rounded-xl space-y-2">
               <p><strong>Department:</strong> {
                 HELPLINES[showHelplineDialog]?.dept || "Public Works Department"
               }</p>
@@ -1240,20 +1345,20 @@ export default function App() {
       )}
 
       {showSuccessDialog && (
-        <div className="fixed inset-0 bg-slate-950/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-100 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl text-left">
-            <div className="flex items-center gap-2 text-emerald-600 border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/5 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl text-left">
+            <div className="flex items-center gap-2 text-emerald-400 border-b border-white/5 pb-3">
               <CheckCircle2 className="h-5 w-5" />
-              <h3 className="font-outfit font-bold text-sm text-slate-800">
+              <h3 className="font-outfit font-bold text-sm text-slate-100">
                 Civic Resolution Verified!
               </h3>
             </div>
             
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               The verification agent compared the before and after evidence. Gemini vision checks confirmed cleanup matching with a high confidence. The complaint ticket has been marked **CLOSED** in the registry.
             </p>
             
-            <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 text-[11px] p-3 rounded-xl font-mono leading-normal">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[11px] p-3 rounded-xl font-mono leading-normal">
               <strong>RESOLUTION SUMMARY:</strong> Verification passed successfully. Resolution matching accuracy exceeded 65% (ignoring camera background drift parameters).
             </div>
 
@@ -1279,7 +1384,7 @@ export default function App() {
       <div className="fixed bottom-5 left-5 z-40">
         <button 
           onClick={() => setShowDemoGuide(!showDemoGuide)}
-          className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-950 text-white font-bold py-2.5 px-4 rounded-full text-xs shadow-xl transition border border-white/10 pointer-events-auto backdrop-blur-md"
+          className="flex items-center gap-1.5 bg-slate-950/90 hover:bg-slate-950 text-white font-bold py-2.5 px-4 rounded-full text-xs shadow-xl transition border border-white/10 pointer-events-auto backdrop-blur-md"
         >
           <PlayCircle className="h-4.5 w-4.5 text-blue-400" />
           {showDemoGuide ? "Hide Pitch Guide" : "Demo Pitch Guide"}
@@ -1291,10 +1396,10 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="absolute bottom-12 left-0 w-80 backdrop-blur-xl border border-white/50 bg-white/90 shadow-2xl rounded-3xl p-5 space-y-4 text-xs z-50 text-left font-sans"
+              className="absolute bottom-12 left-0 w-80 backdrop-blur-xl border border-white/5 bg-slate-900/90 shadow-2xl rounded-3xl p-5 space-y-4 text-xs z-50 text-left font-sans"
             >
-              <div className="border-b border-slate-100 pb-2">
-                <h4 className="font-outfit font-extrabold text-slate-800 text-xs flex items-center gap-1">
+              <div className="border-b border-white/5 pb-2">
+                <h4 className="font-outfit font-extrabold text-slate-100 text-xs flex items-center gap-1">
                   🚀 Hackathon Demo Playbook
                 </h4>
                 <p className="text-[10px] text-slate-400">Present these 3 pathways to wow the judges:</p>
@@ -1302,32 +1407,32 @@ export default function App() {
 
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                 <div className="space-y-1">
-                  <p className="font-bold text-slate-800">Step 1: File & Observe (Auto Routing)</p>
-                  <ul className="list-decimal pl-4 space-y-0.5 text-[10px] text-slate-500">
+                  <p className="font-bold text-slate-200">Step 1: File & Observe (Auto Routing)</p>
+                  <ul className="list-decimal pl-4 space-y-0.5 text-[10px] text-slate-400">
                     <li>Upload any hazard photo, type name & click submit.</li>
-                    <li>Show the morphing Google-color AI Orb and the strategy routing card highlighted as <span className="text-blue-600 font-bold">Chosen by AI</span>.</li>
+                    <li>Show the morphing Google-color AI Orb and the strategy routing card highlighted as <span className="text-blue-400 font-bold">Chosen by AI</span>.</li>
                   </ul>
                 </div>
 
                 <div className="space-y-1">
-                  <p className="font-bold text-slate-800">Step 2: Submit to Portal Registry</p>
-                  <ul className="list-decimal pl-4 space-y-0.5 text-[10px] text-slate-500">
+                  <p className="font-bold text-slate-200">Step 2: Submit to Portal Registry</p>
+                  <ul className="list-decimal pl-4 space-y-0.5 text-[10px] text-slate-400">
                     <li>Click <strong>File Official Petition</strong>.</li>
                     <li>Explain the storyteller overlay checks off security & API gates autonomously.</li>
                   </ul>
                 </div>
 
                 <div className="space-y-1">
-                  <p className="font-bold text-slate-800">Step 3: Test Platform Resilience (Pick One)</p>
-                  <ul className="list-disc pl-4 space-y-1 text-[10px] text-slate-500">
+                  <p className="font-bold text-slate-200">Step 3: Test Platform Resilience (Pick One)</p>
+                  <ul className="list-disc pl-4 space-y-1 text-[10px] text-slate-400">
                     <li>
-                      <span className="font-semibold text-blue-600">SLA Breach:</span> Click <strong>Fast-Forward 24h</strong> in the console. Note the breach alert, slide-over drawer, and official dispatch letter download.
+                      <span className="font-semibold text-blue-400">SLA Breach:</span> Click <strong>Fast-Forward 24h</strong> in the console. Note the breach alert, slide-over drawer, and official dispatch letter download.
                     </li>
                     <li>
-                      <span className="font-semibold text-rose-600">Gateway Timeout:</span> Click <strong>Simulate Portal Crash</strong>. Note the HTTP 504 modal and immediate fallback to manual supervisor escalation.
+                      <span className="font-semibold text-rose-400">Gateway Timeout:</span> Click <strong>Simulate Portal Crash</strong>. Note the HTTP 504 modal and immediate fallback to manual supervisor escalation.
                     </li>
                     <li>
-                      <span className="font-semibold text-emerald-600">Verification Loop:</span> Click <strong>Force Ticket Resolved</strong>. Upload a clean road proof. Observe the side-by-side Before/After comparison. Helpline modal suggests hotline before auto-reset.
+                      <span className="font-semibold text-emerald-400">Verification Loop:</span> Click <strong>Force Ticket Resolved</strong>. Upload a clean road proof. Observe the side-by-side Before/After comparison. Helpline modal suggests hotline before auto-reset.
                     </li>
                   </ul>
                 </div>
@@ -1348,10 +1453,10 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.95 }}
               className={`p-3.5 rounded-xl text-xs font-bold text-white shadow-lg flex items-center gap-2 border pointer-events-auto ${
                 t.type === "success" 
-                  ? "bg-emerald-500 border-emerald-600 shadow-emerald-500/10" 
+                  ? "bg-emerald-600 border-emerald-700 shadow-emerald-500/10" 
                   : t.type === "error"
-                  ? "bg-rose-500 border-rose-600 shadow-rose-500/10"
-                  : "bg-[#1A73E8] border-blue-600 shadow-blue-500/10"
+                  ? "bg-rose-600 border-rose-700 shadow-rose-500/10"
+                  : "bg-blue-600 border-blue-700 shadow-blue-500/10"
               }`}
             >
               {t.type === "success" && <CheckCircle2 className="h-4 w-4" />}
@@ -1361,6 +1466,79 @@ export default function App() {
             </motion.div>
           ))}
         </AnimatePresence>
+      </div>
+
+      {/* Popover overlay modal detailing reasoning trace details (Restored) */}
+      {showTrace && brainDecision && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/5 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl text-left">
+            <div className="flex justify-between items-center border-b border-white/5 pb-3">
+              <h3 className="font-outfit font-bold text-sm text-slate-100 flex items-center gap-1.5">
+                <BrainCircuit className="h-4.5 w-4.5 text-blue-400" /> Decision Reasoning Trace
+              </h3>
+              <button onClick={() => setShowTrace(false)} className="text-slate-400 hover:text-slate-200 text-sm font-bold"><X className="h-4.5 w-4.5" /></button>
+            </div>
+            
+            <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
+              <div>
+                <span className="text-slate-500 font-bold uppercase text-[9px] block">Current Goal Context:</span>
+                <p className="font-semibold text-slate-200">{brainDecision.goal}</p>
+              </div>
+              <div>
+                <span className="text-slate-500 font-bold uppercase text-[9px] block">Semantic Evaluation Logs:</span>
+                <pre className="p-3 bg-slate-950/60 border border-white/5 rounded-xl font-mono text-[9px] text-slate-400 leading-normal overflow-x-auto whitespace-pre-wrap">
+                  [REASONING EVALUATION ENGINE]{"\n"}
+                  - Active State: {brainDecision.current_state}{"\n"}
+                  - Selected Strategy: {brainDecision.chosen_strategy?.name || "N/A"}{"\n"}
+                  - Target Dept: {brainDecision.chosen_strategy?.department || "N/A"}{"\n"}
+                  - Strategy SLA Window: {brainDecision.chosen_strategy?.sla_hours || 0} hours{"\n"}
+                  - Execution Reason: "{brainDecision.reason}"{"\n"}
+                  - Decision Confidence: {((brainDecision.confidence || 0.95) * 100).toFixed(0)}%
+                </pre>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button 
+                onClick={() => setShowTrace(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded-xl text-xs transition"
+              >
+                Close Trace
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sticky Bottom Tab Bar (Mobile Only) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0F1424]/90 backdrop-blur-lg border-t border-white/5 py-2 px-6 flex justify-around items-center z-50 shadow-2xl">
+        <button 
+          onClick={() => setActiveMobileTab("terminal")}
+          className={`flex flex-col items-center gap-1 text-[10px] font-bold transition ${
+            activeMobileTab === "terminal" ? "text-cyan-400" : "text-slate-500 hover:text-slate-400"
+          }`}
+        >
+          <Upload className="h-4 w-4" />
+          <span>Terminal</span>
+        </button>
+        <button 
+          onClick={() => setActiveMobileTab("brain")}
+          className={`flex flex-col items-center gap-1 text-[10px] font-bold transition ${
+            activeMobileTab === "brain" ? "text-cyan-400" : "text-slate-500 hover:text-slate-400"
+          }`}
+        >
+          <BrainCircuit className="h-4 w-4" />
+          <span>Agent Core</span>
+        </button>
+        <button 
+          onClick={() => setActiveMobileTab("logs")}
+          className={`flex flex-col items-center gap-1 text-[10px] font-bold transition ${
+            activeMobileTab === "logs" ? "text-cyan-400" : "text-slate-500 hover:text-slate-400"
+          }`}
+        >
+          <Radio className="h-4 w-4" />
+          <span>Activity Feed</span>
+        </button>
       </div>
 
     </div>
