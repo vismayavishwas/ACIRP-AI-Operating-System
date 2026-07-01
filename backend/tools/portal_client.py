@@ -1,3 +1,4 @@
+import os
 import httpx
 import logging
 from playwright.async_api import async_playwright
@@ -26,7 +27,8 @@ async def submit_via_api(incident_data: dict) -> str:
     """
     Direct API request to the mock municipal portal submission endpoint.
     """
-    url = "http://127.0.0.1:8000/api/mock-portal/submit"
+    port = os.environ.get("PORT", "8000")
+    url = f"http://127.0.0.1:{port}/api/mock-portal/submit"
     payload = {
         "incident_id": incident_data.get("id"),
         "issue_type": incident_data.get("issue_type"),
@@ -49,7 +51,8 @@ async def submit_via_playwright(incident_data: dict) -> str:
     Uses Playwright to automate filing the complaint on the mock portal webpage.
     Provides full retry/recovery mechanism.
     """
-    url = "http://127.0.0.1:8000/mock-portal"
+    port = os.environ.get("PORT", "8000")
+    url = f"http://127.0.0.1:{port}/mock-portal"
     retries = 0
     
     while retries < MAX_PORTAL_RETRIES:
