@@ -61,9 +61,13 @@ async def create_incident(
     
     # Save the uploaded file
     file_ext = image.filename.split(".")[-1]
-    image_path = os.path.join(UPLOAD_DIR, f"{incident_id}_before.{file_ext}")
-    
     image_bytes = await image.read()
+    
+    # Try to upload to Firebase Storage
+    firebase_url = db.upload_image(image_bytes, f"{incident_id}_before.{file_ext}", image.content_type or "image/jpeg")
+    
+    # Save a local backup copy
+    image_path = os.path.join(UPLOAD_DIR, f"{incident_id}_before.{file_ext}")
     with open(image_path, "wb") as f:
         f.write(image_bytes)
         
@@ -74,7 +78,7 @@ async def create_incident(
         complainant_name=complainant_name,
         latitude=latitude,
         longitude=longitude,
-        image_before_url=f"/static/{incident_id}_before.{file_ext}"
+        image_before_url=firebase_url if firebase_url else f"/static/{incident_id}_before.{file_ext}"
     )
     
     # Append initial detection event
@@ -112,19 +116,35 @@ async def verify_incident_resolution(
 
     # Save resolution file
     file_ext = image.filename.split(".")[-1]
-    image_after_path = os.path.join(UPLOAD_DIR, f"{incident_id}_after.{file_ext}")
-    
     image_after_bytes = await image.read()
+    
+    # Try to upload to Firebase Storage
+    firebase_after_url = db.upload_image(image_after_bytes, f"{incident_id}_after.{file_ext}", image.content_type or "image/jpeg")
+    
+    image_after_path = os.path.join(UPLOAD_DIR, f"{incident_id}_after.{file_ext}")
     with open(image_after_path, "wb") as f:
         f.write(image_after_bytes)
         
-    incident.image_after_url = f"/static/{incident_id}_after.{file_ext}"
+    incident.image_after_url = firebase_after_url if firebase_after_url else f"/static/{incident_id}_after.{file_ext}"
     
     import mimetypes
     # Read the original before image bytes
-    before_filename = incident.image_before_url.split("/")[-1]
-    image_before_path = os.path.join(UPLOAD_DIR, before_filename)
-    
+    local_files = [f for f in os.listdir(UPLOAD_DIR) if f.startswith(f"{incident_id}_before.")]
+    if local_files:
+        image_before_path = os.path.join(UPLOAD_DIR, local_files[0])
+    else:
+        # If it doesn't exist locally (server restarted), download it from the public URL!
+        image_before_path = os.path.join(UPLOAD_DIR, f"{incident_id}_before.{file_ext}")
+        if incident.image_before_url.startswith("http"):
+            try:
+                import httpx
+                r = httpx.get(incident.image_before_url)
+                if r.status_code == 200:
+                    with open(image_before_path, "wb") as f:
+                        f.write(r.content)
+            except Exception as e:
+                logger.error(f"Failed to download before image from Firebase: {e}")
+
     # Determine dynamic MIME types for both files
     before_mime, _ = mimetypes.guess_type(image_before_path)
     if not before_mime:

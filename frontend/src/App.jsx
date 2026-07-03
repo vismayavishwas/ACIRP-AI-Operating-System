@@ -20,7 +20,8 @@ import {
   Zap,
   Phone,
   PlayCircle,
-  Search
+  Search,
+  Database
 } from "lucide-react";
 
 const CheckCircle = CheckCircle2;
@@ -141,6 +142,28 @@ export default function App() {
   const [similarityActive, setSimilarityActive] = useState(false);
   const [similarityIncidents, setSimilarityIncidents] = useState([]);
 
+  // Mobile layout state-machine overrides
+  const [mobileOverridePage, setMobileOverridePage] = useState(null);
+  const [showMobileHistoryDrawer, setShowMobileHistoryDrawer] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const getMobileActiveView = () => {
+    if (mobileOverridePage) return mobileOverridePage;
+    if (!selectedIncident) return "standby";
+    if (selectedIncident.status === "PLANNED") return "mockup";
+    if (selectedIncident.status === "ESCALATED") return "escalation";
+    if (selectedIncident.status === "VERIFYING") return "verification";
+    return "processing";
+  };
+  const activeMobileView = getMobileActiveView();
+
   const getEscalationReason = () => {
     if (!selectedIncident?.timeline) return "SLA deadline expired.";
     const hasSLA = selectedIncident.timeline.some(e => 
@@ -187,6 +210,11 @@ export default function App() {
   useEffect(() => {
     if (selectedIncId) {
       fetchIncidentDetails(selectedIncId);
+      if (window.innerWidth < 1024) {
+        setTimeout(() => {
+          window.scrollTo({ top: 120, behavior: "smooth" });
+        }, 500);
+      }
     }
   }, [selectedIncId]);
 
@@ -528,7 +556,7 @@ export default function App() {
               {/* Title & Catchphrase */}
               <div className="text-center space-y-3">
                 <h2 className="font-outfit font-extrabold text-4xl tracking-widest text-white drop-shadow-md">ACIRP</h2>
-                <p className="text-xs font-mono tracking-[0.24em] text-cyan-400 uppercase font-bold leading-none">AI Grievance Operating System</p>
+                <p className="text-[10px] font-mono tracking-[0.08em] text-cyan-400 uppercase font-bold leading-tight max-w-[260px] mx-auto">Autonomous Civic Incident Resolution Platform</p>
                 <p className="text-xs text-slate-200 font-sans italic mt-2.5 leading-normal font-semibold max-w-[280px]">
                   "Here to serve. Watching the streets, helping the city."
                 </p>
@@ -578,7 +606,25 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2">
+          {/* Mobile-only Playbook Trigger */}
+          <button 
+            onClick={() => setShowDemoGuide(!showDemoGuide)}
+            className="lg:hidden flex items-center gap-1 bg-[#131932]/90 hover:bg-[#1A2244] border border-white/10 text-slate-300 font-bold py-1 px-2.5 rounded-full text-[9px] shadow-sm transition"
+          >
+            <PlayCircle className="h-3 w-3 text-blue-400" />
+            Playbook
+          </button>
+
+          {/* Mobile-only Database Registry Drawer Trigger */}
+          <button 
+            onClick={() => setShowMobileHistoryDrawer(true)}
+            className="lg:hidden flex items-center gap-1 bg-[#131932]/90 hover:bg-[#1A2244] border border-white/10 text-indigo-300 font-bold py-1 px-2.5 rounded-full text-[9px] shadow-sm transition mr-1"
+          >
+            <Database className="h-3 w-3 text-indigo-400" />
+            Registry
+          </button>
+
           <span className={`h-2 w-2 rounded-full ${
             !selectedIncident || selectedIncident.status === "CLOSED" 
               ? "bg-slate-400" 
@@ -594,14 +640,66 @@ export default function App() {
         </div>
       </header>
 
+      {/* Floating Active Strategy Override Banner (Mobile Only) */}
+      {mobileOverridePage === "mockup" && (
+        <div className="block lg:hidden bg-rose-950/80 border border-rose-500/30 rounded-2xl p-3.5 flex justify-between items-center text-xs text-rose-200 mb-4 backdrop-blur-md z-40 relative text-left">
+          <div>
+            <p className="font-bold text-rose-300">Viewing Strategy Mockup</p>
+            <p className="text-[10px] text-rose-400/90 font-medium">Review municipal routing before approving escalation.</p>
+          </div>
+          <button
+            onClick={() => setMobileOverridePage(null)}
+            className="bg-rose-500 hover:bg-rose-600 text-white font-bold px-3 py-1.5 rounded-xl text-[10px] transition"
+          >
+            Back to Approval
+          </button>
+        </div>
+      )}
+
+      {/* Sticky Top AI Monitor HUD Header (Mobile Only, active incident monitoring) */}
+      {selectedIncident && activeMobileView !== "standby" && (
+        <div className="lg:hidden sticky top-0 z-30 backdrop-blur-md bg-[#0F1424]/90 border border-indigo-500/10 p-3.5 rounded-2xl flex items-center gap-3.5 shadow-lg text-left mb-6">
+          <div className={`h-11 w-11 rounded-full bg-gradient-to-tr flex items-center justify-center flex-shrink-0 relative ${
+            selectedIncident.status === "CLOSED" ? "from-emerald-500 to-teal-600 animate-orb-closed" :
+            selectedIncident.status === "ESCALATED" ? "from-rose-600 to-red-700 animate-orb-escalated" :
+            selectedIncident.status === "VERIFYING" ? "from-indigo-600 to-purple-700 animate-orb-verifying" :
+            selectedIncident.status === "MONITORING" ? "from-amber-500 to-yellow-600 animate-orb-monitoring" :
+            "from-blue-500 via-purple-500 to-rose-500 animate-orb-thinking"
+          }`}>
+            <div className="absolute inset-0.5 rounded-full bg-[#0B0F19]/80 backdrop-blur-xs flex flex-col items-center justify-center text-center p-0.5">
+              <span className="text-[5px] font-bold text-white/50 uppercase leading-none">Conf</span>
+              <span className="text-[9px] font-extrabold text-white leading-none mt-0.5"><ConfidenceCounter target={selectedIncident.confidence} /></span>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[8px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider leading-none">AI Monitor</span>
+              <span className="text-[8px] bg-slate-800 text-slate-400 font-bold px-1.5 py-0.5 rounded-full uppercase leading-none tracking-wider">{selectedIncident.status}</span>
+            </div>
+            <p className="text-[10px] text-slate-200 font-semibold truncate mt-1">
+              Reason: {brainDecision?.reason || "Synthesizing civic incident parameters..."}
+            </p>
+          </div>
+          {/* File New incident button on Mobile */}
+          <button 
+            onClick={() => { setSelectedIncId(""); setSelectedIncident(null); setBrainDecision(null); setMobileOverridePage(null); }} 
+            className="bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 px-2 py-1.5 rounded-lg text-[9px] font-bold transition"
+          >
+            Reset
+          </button>
+        </div>
+      )}
+
       {/* Main Core Mission Control Console Workspace */}
       <main className="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start flex-1 mb-16 lg:mb-0">
         
         {/* LEFT COLUMN: Citizen File Terminal & Portal Registry Selector (4 cols) */}
-        <section className={`lg:col-span-4 space-y-6 ${activeMobileTab !== "terminal" && activeMobileTab !== "logs" ? "hidden lg:block" : ""}`}>
+        <section className="lg:col-span-4 space-y-6">
           
           {/* Card 1: Citizen File Terminal (Glassmorphism layout) */}
-          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-4 ${activeMobileTab === "logs" ? "hidden lg:block" : ""}`}>
+          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-4 ${
+            activeMobileView === "standby" ? "block" : "hidden lg:block"
+          }`}>
             <h2 className="text-xs uppercase tracking-wider font-extrabold text-slate-400 flex items-center gap-1.5">
               <Upload className="h-4 w-4 text-slate-500" /> 1. Citizen Submission Node
             </h2>
@@ -666,7 +764,9 @@ export default function App() {
 
           {/* Verification section */}
           {selectedIncident && selectedIncident.status === "VERIFYING" && (
-            <div className={`backdrop-blur-xl border border-indigo-500/10 bg-indigo-950/15 shadow-2xl rounded-3xl p-5 space-y-3 text-left ${activeMobileTab === "logs" ? "hidden lg:block" : ""}`}>
+            <div className={`backdrop-blur-xl border border-indigo-500/10 bg-indigo-950/15 shadow-2xl rounded-3xl p-5 space-y-3 text-left ${
+              activeMobileView === "verification" ? "block" : "hidden lg:block"
+            }`}>
               <h2 className="text-xs uppercase tracking-wider font-extrabold text-indigo-400 flex items-center gap-1.5">
                 <UserCheck className="h-4 w-4 text-indigo-400" /> Verification Pending
               </h2>
@@ -699,7 +799,9 @@ export default function App() {
           )}
 
           {/* Card 2: Registry Database Selector */}
-          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-3 ${activeMobileTab === "logs" ? "hidden lg:block" : ""}`}>
+          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-3 ${
+            activeMobileView === "standby" ? "block" : "hidden lg:block"
+          }`}>
             <h2 className="text-xs uppercase tracking-wider font-extrabold text-slate-400 flex items-center gap-1.5">
               <Layers className="h-4 w-4 text-slate-500" /> Civic Incident Registry
             </h2>
@@ -743,7 +845,9 @@ export default function App() {
           </div>
 
           {/* Card 3: Simulator Controls console */}
-          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-3 relative overflow-hidden ${activeMobileTab === "terminal" ? "hidden lg:block" : ""}`}>
+          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-3 relative overflow-hidden ${
+            selectedIncident ? "block" : "hidden lg:block"
+          }`}>
             <h2 className="text-xs uppercase tracking-wider font-extrabold text-slate-400 flex items-center gap-1.5">
               <Settings className="h-4 w-4 text-slate-500" /> Simulator Console
             </h2>
@@ -794,7 +898,7 @@ export default function App() {
         </section>
 
         {/* RIGHT COLUMN: The AI Main Character Node & Brain Execution Console (8 cols) */}
-        <section className={`lg:col-span-8 space-y-6 ${activeMobileTab !== "brain" && activeMobileTab !== "logs" ? "hidden lg:block" : ""}`}>
+        <section className="lg:col-span-8 space-y-6">
           
           <div className="relative overflow-visible">
             {/* Soft Radial Backlight Aura behind Card 4 (Pulsating) */}
@@ -815,7 +919,7 @@ export default function App() {
 
             {/* Main Card: Hero Agent Mission Control Console */}
           <div className={`backdrop-blur-xl border bg-[#0F1426]/40 shadow-2xl rounded-3xl p-6 md:p-8 space-y-8 relative overflow-hidden transition-all duration-1000 ${
-            activeMobileTab !== "brain" ? "hidden lg:block" : ""
+            activeMobileView === "processing" || activeMobileView === "mockup" ? "block" : "hidden lg:block"
           } ${
             !selectedIncident ? "border-white/5 shadow-black/40" :
             selectedIncident.status === "CLOSED" ? "border-emerald-500/25 shadow-emerald-500/5 ring-1 ring-emerald-500/10" :
@@ -925,7 +1029,9 @@ export default function App() {
 
             {/* Strategic Details Workflow & Decision card */}
             {selectedIncident && (
-              <div className="space-y-6 pt-6 border-t border-white/5">
+              <div className={`space-y-6 pt-6 border-t border-white/5 ${
+                activeMobileView === "mockup" ? "block" : "hidden lg:block"
+              }`}>
                 {/* AI Visual Evidence Comparison Panel */}
                 <div className="p-4 rounded-2xl border border-white/5 bg-slate-950/20 space-y-3">
                   <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block text-left">
@@ -938,7 +1044,7 @@ export default function App() {
                     <div className="flex flex-col items-center space-y-1.5 flex-1 max-w-[160px]">
                       <div className="w-full h-24 bg-slate-950/50 border border-white/5 rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative">
                         <img 
-                          src={`${API_BASE}${selectedIncident.image_before_url}`} 
+                          src={selectedIncident.image_before_url.startsWith("http") ? selectedIncident.image_before_url : `${API_BASE}${selectedIncident.image_before_url}`} 
                           alt="Before" 
                           className="w-full h-full object-cover opacity-80"
                         />
@@ -953,7 +1059,7 @@ export default function App() {
                           <div className="w-full h-24 bg-slate-950/50 border border-white/5 rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative">
                             {selectedIncident.image_after_url ? (
                               <img 
-                                src={`${API_BASE}${selectedIncident.image_after_url}`} 
+                                src={selectedIncident.image_after_url.startsWith("http") ? selectedIncident.image_after_url : `${API_BASE}${selectedIncident.image_after_url}`} 
                                 alt="After" 
                                 className="w-full h-full object-cover opacity-80"
                               />
@@ -1083,7 +1189,9 @@ export default function App() {
         </div>
 
           {/* Card: Standardized Timeline entries with expand log blocks */}
-          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-4 ${activeMobileTab !== "logs" ? "hidden lg:block" : ""}`}>
+          <div className={`backdrop-blur-xl border border-white/5 bg-slate-900/30 shadow-2xl rounded-3xl p-5 space-y-4 ${
+            activeMobileView === "processing" ? "block" : "hidden lg:block"
+          }`}>
             <h3 className="text-xs uppercase tracking-wider font-bold text-slate-400 flex items-center gap-1.5">
               <Radio className="h-4 w-4 text-slate-500" /> Agent Activity Feed (Timeline)
             </h3>
@@ -1145,8 +1253,8 @@ export default function App() {
 
       {/* Human Escalation Approval slide-over notification card */}
       <AnimatePresence>
-        {selectedIncident?.status === "ESCALATED" && (
-          <div className="fixed inset-0 z-50 flex justify-end">
+        {selectedIncident?.status === "ESCALATED" && mobileOverridePage !== "mockup" && (
+          <div className="fixed inset-0 z-50 flex items-end lg:items-stretch justify-center lg:justify-end">
             {/* Modal backdrop */}
             <motion.div 
               initial={{ opacity: 0 }}
@@ -1158,11 +1266,11 @@ export default function App() {
 
             {/* Slide-over panel content */}
             <motion.div 
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
+              initial={isMobile ? { y: "100%", x: 0 } : { x: "100%", y: 0 }}
+              animate={isMobile ? { y: 0, x: 0 } : { x: 0, y: 0 }}
+              exit={isMobile ? { y: "100%", x: 0 } : { x: "100%", y: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-sm border-l border-rose-500/20 bg-[#16111C]/90 backdrop-blur-xl shadow-[-20px_0_40px_rgba(244,63,94,0.08)] h-full p-6 flex flex-col justify-between overflow-y-auto z-10 text-left"
+              className="relative w-full lg:max-w-sm border-t lg:border-t-0 lg:border-l border-rose-500/20 bg-[#16111C]/95 backdrop-blur-xl shadow-[-20px_0_40px_rgba(244,63,94,0.08)] h-[82vh] lg:h-full p-6 flex flex-col justify-between overflow-y-auto z-10 text-left rounded-t-3xl lg:rounded-none bottom-0 lg:bottom-auto absolute lg:relative"
             >
               <div className="space-y-6">
                 <div className="flex justify-between items-center border-b border-white/5 pb-3">
@@ -1184,6 +1292,12 @@ export default function App() {
                     <p className="text-slate-300">
                       The active incident has met threshold limits. Direct human approval is required to initiate the next escalation path level.
                     </p>
+                    <button 
+                      onClick={() => setMobileOverridePage("mockup")}
+                      className="lg:hidden w-full mt-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-300 font-bold py-1 px-2.5 rounded-lg text-[9px] transition"
+                    >
+                      🔍 Inspect Strategy Mockup
+                    </button>
                   </div>
 
                   <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 text-xs space-y-1.5 leading-normal text-slate-300">
@@ -1380,8 +1494,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Floating Demo Presentation Guide (Bottom-Left) */}
-      <div className="fixed bottom-5 left-5 z-40">
+      {/* Floating Demo Presentation Guide (Bottom-Left, Hidden on Mobile) */}
+      <div className="fixed bottom-5 left-5 z-40 hidden lg:block">
         <button 
           onClick={() => setShowDemoGuide(!showDemoGuide)}
           className="flex items-center gap-1.5 bg-slate-950/90 hover:bg-slate-950 text-white font-bold py-2.5 px-4 rounded-full text-xs shadow-xl transition border border-white/10 pointer-events-auto backdrop-blur-md"
@@ -1510,36 +1624,152 @@ export default function App() {
         </div>
       )}
 
-      {/* Sticky Bottom Tab Bar (Mobile Only) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0F1424]/90 backdrop-blur-lg border-t border-white/5 py-2 px-6 flex justify-around items-center z-50 shadow-2xl">
-        <button 
-          onClick={() => setActiveMobileTab("terminal")}
-          className={`flex flex-col items-center gap-1 text-[10px] font-bold transition ${
-            activeMobileTab === "terminal" ? "text-cyan-400" : "text-slate-500 hover:text-slate-400"
-          }`}
-        >
-          <Upload className="h-4 w-4" />
-          <span>Terminal</span>
-        </button>
-        <button 
-          onClick={() => setActiveMobileTab("brain")}
-          className={`flex flex-col items-center gap-1 text-[10px] font-bold transition ${
-            activeMobileTab === "brain" ? "text-cyan-400" : "text-slate-500 hover:text-slate-400"
-          }`}
-        >
-          <BrainCircuit className="h-4 w-4" />
-          <span>Agent Core</span>
-        </button>
-        <button 
-          onClick={() => setActiveMobileTab("logs")}
-          className={`flex flex-col items-center gap-1 text-[10px] font-bold transition ${
-            activeMobileTab === "logs" ? "text-cyan-400" : "text-slate-500 hover:text-slate-400"
-          }`}
-        >
-          <Radio className="h-4 w-4" />
-          <span>Activity Feed</span>
-        </button>
-      </div>
+      {/* Mobile Playbook Drawer (Mobile Only, slide-up sheet) */}
+      <AnimatePresence>
+        {showDemoGuide && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center lg:hidden">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDemoGuide(false)}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+            />
+            {/* Content Sheet */}
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-md bg-[#0F1424]/95 border-t border-white/10 rounded-t-3xl p-5 space-y-4 shadow-2xl z-10 text-left max-h-[70vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                <h3 className="text-xs uppercase font-extrabold tracking-wider text-slate-300 flex items-center gap-1.5 font-outfit">
+                  <PlayCircle className="h-4 w-4 text-blue-400" /> Hackathon Demo Playbook
+                </h3>
+                <button 
+                  onClick={() => setShowDemoGuide(false)}
+                  className="text-slate-400 hover:text-slate-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 text-xs text-slate-300">
+                <p className="text-[10px] text-slate-400">Present these 3 pathways to showcase the platform flow:</p>
+                
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-200">Step 1: File & Observe (Auto Routing)</p>
+                  <ul className="list-decimal pl-4 space-y-0.5 text-[10px] text-slate-400">
+                    <li>Upload any hazard photo, type name & click submit.</li>
+                    <li>Observe the morphing AI Orb and the dynamic strategy routing.</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-200">Step 2: Submit to Portal Registry</p>
+                  <ul className="list-decimal pl-4 space-y-0.5 text-[10px] text-slate-400">
+                    <li>Click <strong>File Official Petition</strong>.</li>
+                    <li>Watch the storyteller overlay run API gate simulations.</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-200">Step 3: Test Platform Resilience (Pick One)</p>
+                  <ul className="list-disc pl-4 space-y-1 text-[10px] text-slate-400">
+                    <li>
+                      <span className="font-semibold text-blue-400">SLA Breach:</span> Click <strong>Fast-Forward 24h</strong> in the console. Note the breach alert, slide-over drawer, and official dispatch letter download.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-rose-400">Gateway Timeout:</span> Click <strong>Simulate Portal Crash</strong>. Note the HTTP 504 modal and immediate fallback.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-emerald-400">Verification Loop:</span> Click <strong>Force Ticket Resolved</strong>. Upload a clean road proof. Observe the side-by-side Before/After comparison.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Incident History Registry Drawer (Mobile Only, slide-up sheet) */}
+      <AnimatePresence>
+        {showMobileHistoryDrawer && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center lg:hidden">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMobileHistoryDrawer(false)}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+            />
+            {/* Content Sheet */}
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-md bg-[#0F1424]/95 border-t border-white/10 rounded-t-3xl p-5 space-y-4 shadow-2xl z-10 text-left max-h-[70vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                <h3 className="text-xs uppercase font-extrabold tracking-wider text-slate-300 flex items-center gap-1.5 font-outfit">
+                  <Database className="h-4 w-4 text-indigo-400" /> Civic Incident Registry
+                </h3>
+                <button 
+                  onClick={() => setShowMobileHistoryDrawer(false)}
+                  className="text-slate-400 hover:text-slate-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                {incidents.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-4">No logged incidents found.</p>
+                ) : (
+                  incidents.map((inc) => {
+                    const active = inc.id === selectedIncId;
+                    const isClosed = inc.status === "CLOSED";
+                    return (
+                      <button 
+                        key={inc.id}
+                        onClick={() => {
+                          setSelectedIncId(inc.id);
+                          fetchIncidentDetails(inc.id);
+                          setShowMobileHistoryDrawer(false);
+                          setMobileOverridePage(null); // Reset override on selection!
+                        }}
+                        className={`w-full text-left p-3 rounded-2xl border transition flex flex-col justify-between ${
+                          active 
+                            ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-200" 
+                            : "border-white/5 bg-slate-950/20 text-slate-400 hover:bg-white/5"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <span className="text-[9px] font-mono tracking-tight text-slate-500">ID: {inc.id.slice(0, 8)}...</span>
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold uppercase ${
+                            isClosed ? "bg-emerald-500/20 text-emerald-400" : "bg-blue-500/20 text-blue-400"
+                          }`}>{inc.status}</span>
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-200 truncate mt-1">
+                          {inc.complainant_name} • {inc.issue_type}
+                        </div>
+                        <div className="text-[9px] text-slate-500 mt-0.5">
+                          GPS: {parseFloat(inc.latitude).toFixed(4)}, {parseFloat(inc.longitude).toFixed(4)}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
