@@ -28,6 +28,22 @@ const CheckCircle = CheckCircle2;
 
 const API_BASE = "https://acirp-backend.onrender.com";
 
+const ACTIVE_COMPETITION = "google"; // Set to "unstop" on comp-unstop branch
+
+// Global fetch interceptor to inject active competition context
+const originalFetch = window.fetch;
+window.fetch = async (url, options = {}) => {
+  if (url.toString().includes(API_BASE)) {
+    options.headers = options.headers || {};
+    if (options.headers instanceof Headers) {
+      options.headers.set("x-competition", ACTIVE_COMPETITION);
+    } else {
+      options.headers["x-competition"] = ACTIVE_COMPETITION;
+    }
+  }
+  return originalFetch(url, options);
+};
+
 // Standard UI Icons for Timeline Stages
 const STAGE_ICONS = {
   PERCEPTION: <Eye className="h-3 w-3" />,

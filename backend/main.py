@@ -2,13 +2,13 @@ import os
 import uuid
 import logging
 from datetime import datetime, timedelta
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from typing import List, Optional
 
 from models import Incident, TimelineEvent, PlannerDecision, Strategy
-from db_mock import MockDB
+from db_mock import MockDB, comp_id_context
 from config import GEMINI_API_KEY
 from agents.perception import PerceptionAgent
 from agents.planner import PlanningAgent
@@ -28,6 +28,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_competition_context(request: Request, call_next):
+    # Retrieve the competition context header (defaults to google if not sent)
+    comp_id = request.headers.get("x-competition", "google")
+    token = comp_id_context.set(comp_id)
+    try:
+        response = await call_next(request)
+    finally:
+        comp_id_context.reset(token)
+    return response
 
 # Initialize Mock Database & AI Agents
 db = MockDB()
