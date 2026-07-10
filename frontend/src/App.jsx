@@ -28,7 +28,7 @@ const CheckCircle = CheckCircle2;
 
 const API_BASE = "https://acirp-backend.onrender.com";
 
-const ACTIVE_COMPETITION = "unstop"; // Set to "unstop" on comp-unstop branch
+const ACTIVE_COMPETITION = "google"; // Set to "unstop" on comp-unstop branch
 
 // Global fetch interceptor to inject active competition context
 const originalFetch = window.fetch;
