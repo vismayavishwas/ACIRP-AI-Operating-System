@@ -354,8 +354,17 @@ export default function App() {
       setVerifyFile(null);
       
       if (data.status === "CLOSED") {
-        addToast("Verification successful! Ticket CLOSED.", "success");
-        setShowSuccessDialog(true);
+        const lastEvent = data.timeline?.[data.timeline.length - 1];
+        const isExhausted = lastEvent?.decision?.toLowerCase().includes("exhausted") || 
+                            data.escalation_level >= (data.current_strategy?.escalation_path?.length || 0);
+        
+        if (isExhausted) {
+          addToast("Verification failed & routes exhausted. Helpline suggested.", "warning");
+          setShowHelplineDialog(data.issue_type || "pothole");
+        } else {
+          addToast("Verification successful! Ticket CLOSED.", "success");
+          setShowSuccessDialog(true);
+        }
       } else {
         addToast("Verification failed. Resolving parameters not met.", "error");
       }
@@ -374,7 +383,16 @@ export default function App() {
       await fetch(`${API_BASE}/api/incidents/${selectedIncId}/approve-escalation`, { method: "POST" });
       addToast("Escalation approved. Running agent strategy check...", "success");
       // Tick to advance strategy instantly
-      await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
+      const tickRes = await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
+      const tickData = await tickRes.json();
+      
+      if (tickData.status === "CLOSED") {
+        const isExhausted = tickData.escalation_level >= (tickData.current_strategy?.escalation_path?.length || 0);
+        if (isExhausted) {
+          setShowHelplineDialog(tickData.issue_type || "pothole");
+        }
+      }
+      
       fetchIncidentDetails(selectedIncId);
     } catch (err) {
       addToast("Escalation approval failed.", "error");
@@ -385,8 +403,18 @@ export default function App() {
     setIsTicking(true);
     addToast("Orchestrator: Executing next autonomous step...", "info");
     try {
-      await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
+      const res = await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
+      const tickData = await res.json();
       addToast("Step executed successfully.", "success");
+      
+      if (tickData.status === "CLOSED") {
+        if (tickData.escalation_level >= (tickData.current_strategy?.escalation_path?.length || 0)) {
+          setShowHelplineDialog(tickData.issue_type || "pothole");
+        } else {
+          setShowSuccessDialog(true);
+        }
+      }
+      
       await fetchIncidentDetails(selectedIncId);
     } catch (err) {
       addToast("Tick execution failed.", "error");
@@ -394,7 +422,6 @@ export default function App() {
       setIsTicking(false);
     }
   };
-
 
   const handleMarkResolved = async () => {
     if (!selectedIncident?.official_token) return;
@@ -416,7 +443,15 @@ export default function App() {
       await fetch(`${API_BASE}/api/simulator/trigger-sla-breach/${selectedIncId}`, { method: "POST" });
       addToast("SLA Breach registered. Running agent check...", "success");
       // Immediately tick the agent to escalate the ticket!
-      await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
+      const tickRes = await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
+      const tickData = await tickRes.json();
+      
+      if (tickData.status === "CLOSED") {
+        if (tickData.escalation_level >= (tickData.current_strategy?.escalation_path?.length || 0)) {
+          setShowHelplineDialog(tickData.issue_type || "pothole");
+        }
+      }
+      
       fetchIncidentDetails(selectedIncId);
     } catch (err) {
       addToast("Simulator: Failed to trigger SLA breach.", "error");
@@ -1449,32 +1484,56 @@ export default function App() {
         </div>
       )}
 
-      {showHelplineDialog && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-white/5 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl text-left">
-            <div className="flex items-center gap-2 text-blue-400 border-b border-white/5 pb-3">
-              <Phone className="h-5 w-5" />
-              <h3 className="font-outfit font-bold text-sm text-slate-100">
-                Direct Department Helpline Suggestion
-              </h3>
+      {showHelplineDialog && selectedIncident && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#16111C]/95 border border-rose-500/20 max-w-2xl w-full rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl text-left relative overflow-hidden">
+            {/* Ambient glows */}
+            <div className="absolute -top-24 -left-24 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl" />
+
+            <div className="flex items-center gap-3 text-rose-400 border-b border-white/5 pb-4 relative z-10">
+              <Phone className="h-6 w-6 animate-pulse" />
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-wider text-rose-400">Escalation Threshold Met</span>
+                <h3 className="font-outfit font-bold text-base text-slate-100 mt-0.5">
+                  Digital Routing Exhausted: Helpline Fallback Required
+                </h3>
+              </div>
             </div>
             
-            <p className="text-xs text-slate-300 leading-relaxed">
-              All digital escalation channels have been fully exhausted. The agent has successfully logged the SLA breach and composed public alerts. Please contact the direct department helpline for immediate manual dispatch:
+            <p className="text-xs text-slate-300 leading-relaxed relative z-10">
+              All automated digital escalation paths have been fully exhausted for this case. The system has completed its digital loop (portal submission, public tracking, and social media escalations). Please contact the direct municipal helpline hotline below for manual dispatcher field action.
             </p>
-            
-            <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs p-4 rounded-xl space-y-2">
-              <p><strong>Department:</strong> {
-                HELPLINES[showHelplineDialog]?.dept || "Public Works Department"
-              }</p>
-              <p className="text-sm font-bold font-mono">
-                📞 Hotline: {
-                  HELPLINES[showHelplineDialog]?.phone || "080-2223-1800"
-                }
-              </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+              {/* Helpline card */}
+              <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 p-4 rounded-2xl flex flex-col justify-between space-y-3">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📞 Emergency hotline contact</p>
+                  <p className="text-xs text-slate-200 mt-1"><strong>Department:</strong> {HELPLINES[showHelplineDialog]?.dept || "Public Works Department"}</p>
+                </div>
+                <p className="text-sm font-bold font-mono text-slate-100">
+                  HotLine: {HELPLINES[showHelplineDialog]?.phone || "080-2223-1800"}
+                </p>
+              </div>
+
+              {/* Dossier Card */}
+              <div className="bg-slate-950/40 border border-white/5 p-4 rounded-2xl flex flex-col justify-between space-y-3">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📋 Case Dossier & Letter</p>
+                  <p className="text-xs text-slate-300 mt-1">Download the generated formal grievance letter containing all coordinates, timestamps, and image links.</p>
+                </div>
+                <a 
+                  href={`${API_BASE}/api/incidents/${selectedIncident.id}/download-escalation-letter`}
+                  download
+                  className="w-full flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-2 rounded-xl text-xs transition border border-white/5 shadow-sm"
+                >
+                  📥 Download Dossier (HTML)
+                </a>
+              </div>
             </div>
             
-            <div className="pt-2 flex justify-end">
+            <div className="pt-2 flex justify-end relative z-10 border-t border-white/5">
               <button 
                 onClick={() => {
                   setShowHelplineDialog(null);
@@ -1483,7 +1542,7 @@ export default function App() {
                   setBrainDecision(null);
                   setVerifyFile(null);
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded-xl text-xs transition"
+                className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-2 px-6 rounded-xl text-xs transition shadow-lg shadow-blue-500/20"
               >
                 Acknowledge & Close Case
               </button>
