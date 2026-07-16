@@ -1318,8 +1318,16 @@ export default function App() {
 
                   <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 text-xs space-y-1.5 leading-normal text-slate-300">
                     <p><strong>Department Route:</strong> {selectedIncident.current_strategy?.department}</p>
-                    <p><strong>Escalation Target:</strong> {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Commissioner"}</p>
-                    <p><strong>Current Level:</strong> Tier {selectedIncident.escalation_level + 1} of {selectedIncident.current_strategy?.escalation_path?.length}</p>
+                    <p><strong>Escalation Target:</strong> {
+                      selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                        ? "Exhausted (Helpline Fallback)"
+                        : (selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Commissioner")
+                    }</p>
+                    <p><strong>Current Level:</strong> {
+                      selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                        ? "Exhaustion Phase"
+                        : `Tier ${selectedIncident.escalation_level + 1} of ${selectedIncident.current_strategy?.escalation_path?.length || 0}`
+                    }</p>
                   </div>
                 </div>
 
@@ -1342,7 +1350,7 @@ export default function App() {
                       </p>
                     </div>
                     <a 
-                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🚨 ESCALATION: Civic ${selectedIncident.issue_type} unresolved at coordinates ${selectedIncident.latitude}, ${selectedIncident.longitude} for ${selectedIncident.current_strategy.sla_hours}h. Ref: ${selectedIncident.official_token || "BBMP-REF"}. Urgent action required @BBMPCOMM @citizen_alert. #CivicResolve`)}`}
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🚨 ESCALATION: Civic ${selectedIncident.issue_type} unresolved at coordinates ${selectedIncident.latitude}, ${selectedIncident.longitude} for ${selectedIncident.current_strategy.sla_hours}h. Ref: {selectedIncident.official_token || "BBMP-REF"}. Urgent action required @BBMPCOMM @citizen_alert. #CivicResolve`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-full mt-1 flex items-center justify-center gap-1 bg-sky-500 hover:bg-sky-600 text-white font-bold py-1.5 rounded-lg text-[10px] transition shadow-md shadow-sky-500/10 pointer-events-auto"
@@ -1356,9 +1364,21 @@ export default function App() {
                       📞 Planned Action Target Details
                     </div>
                     <div className="text-[11px] text-slate-300 leading-normal space-y-1">
-                      <p><strong>Authority Name:</strong> {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Chief"}</p>
-                      <p><strong>Action Type:</strong> Official Municipal Dispatch Request & SLA Override</p>
-                      <p><strong>Automatic Notice:</strong> Send formal report template directly via API.</p>
+                      <p><strong>Authority Name:</strong> {
+                        selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                          ? "Direct Helpline Contact"
+                          : (selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Chief")
+                      }</p>
+                      <p><strong>Action Type:</strong> {
+                        selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                          ? "Direct Hotline Dispatch Notification"
+                          : "Official Municipal Dispatch Request & SLA Override"
+                      }</p>
+                      <p><strong>Automatic Notice:</strong> {
+                        selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                          ? "Digital routes exhausted. Direct user to phone call helpline."
+                          : "Send formal report template directly via API."
+                      }</p>
                     </div>
                   </div>
                 )}
@@ -1384,9 +1404,13 @@ export default function App() {
                     onClick={handleApproveEscalation}
                     className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-rose-500/20"
                   >
-                    Approve Escalation
+                    {
+                      selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                        ? "Exhaust & Call Helpline"
+                        : "Approve Escalation"
+                    }
                   </button>
-                </div>
+              </div>
               </div>
             </motion.div>
           </div>

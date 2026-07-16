@@ -220,7 +220,7 @@ async def approve_escalation(incident_id: str):
     
     timestamp = datetime.now().strftime("%d %b %H:%M")
     
-    if incident.escalation_level < len(escalation_paths):
+    if incident.escalation_level <= len(escalation_paths):
         escalation_target = escalation_paths[incident.escalation_level - 1]
         
         # Reset status back to monitoring after escalation action
