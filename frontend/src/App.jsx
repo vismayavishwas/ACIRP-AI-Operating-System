@@ -1184,13 +1184,14 @@ export default function App() {
                     <div>
                       <span className="text-[10px] uppercase font-bold text-slate-500">Next Planned Action</span>
                       {selectedIncident.status === "CLOSED" && !selectedIncident.image_after_url ? (
-                        <div className="mt-1 space-y-1.5">
-                          <p className="text-xs text-slate-300 font-medium">{brainDecision?.next_action}</p>
-                          <div className="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg text-[9px] text-amber-300 space-y-0.5">
-                            <p className="font-bold">Suggested Dispatch Contact:</p>
-                            <p className="font-semibold">{HELPLINES[selectedIncident.issue_type]?.dept || "Public Works Department"}</p>
-                            <p className="font-bold font-mono">📞 {HELPLINES[selectedIncident.issue_type]?.phone || "080-2223-1800"}</p>
-                          </div>
+                        <div className="mt-2 space-y-3">
+                          <p className="text-xs text-slate-300 font-medium">Digital routing routes have been exhausted. Helpline fallback is suggested.</p>
+                          <button 
+                            onClick={() => setShowHelplineDialog(selectedIncident.issue_type)}
+                            className="w-full bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-blue-500/20"
+                          >
+                            Accept & Close Case
+                          </button>
                         </div>
                       ) : (
                         <p className="text-xs text-slate-300 font-medium mt-1">{brainDecision?.next_action || "Waiting for initialization"}</p>
