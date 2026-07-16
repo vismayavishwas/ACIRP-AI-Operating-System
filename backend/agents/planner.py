@@ -103,15 +103,27 @@ class PlanningAgent:
             if incident.sla_deadline:
                 deadline = datetime.fromisoformat(incident.sla_deadline)
                 if datetime.now() > deadline:
-                    incident.status = "ESCALATED"
-                    incident.timeline.append(TimelineEvent(
-                        timestamp=timestamp,
-                        stage="MONITOR",
-                        decision="SLA Breach Detected",
-                        confidence="100%",
-                        reason=f"Ticket unresolved after SLA window of {incident.current_strategy.sla_hours} hours.",
-                        next_action="Escalate ticket to higher authority"
-                    ))
+                    escalation_paths = incident.current_strategy.escalation_path if incident.current_strategy else []
+                    if incident.escalation_level >= len(escalation_paths):
+                        incident.status = "CLOSED"
+                        incident.timeline.append(TimelineEvent(
+                            timestamp=timestamp,
+                            stage="MONITOR",
+                            decision="SLA Breach - Routes Exhausted",
+                            confidence="100%",
+                            reason="Ticket unresolved after final escalation window. All digital paths exhausted.",
+                            next_action="Recommending manual dispatch via helpline."
+                        ))
+                    else:
+                        incident.status = "ESCALATED"
+                        incident.timeline.append(TimelineEvent(
+                            timestamp=timestamp,
+                            stage="MONITOR",
+                            decision="SLA Breach Detected",
+                            confidence="100%",
+                            reason=f"Ticket unresolved after SLA window of {incident.current_strategy.sla_hours} hours.",
+                            next_action="Escalate ticket to higher authority"
+                        ))
                     incident.updated_at = datetime.now().isoformat()
 
         return incident

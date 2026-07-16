@@ -354,8 +354,17 @@ export default function App() {
       setVerifyFile(null);
       
       if (data.status === "CLOSED") {
-        addToast("Verification successful! Ticket CLOSED.", "success");
-        setShowSuccessDialog(true);
+        const lastEvent = data.timeline?.[data.timeline.length - 1];
+        const isExhausted = lastEvent?.decision?.toLowerCase().includes("exhausted") || 
+                            data.escalation_level >= (data.current_strategy?.escalation_path?.length || 0);
+        
+        if (isExhausted) {
+          addToast("Verification failed & routes exhausted. Helpline suggested.", "warning");
+          setShowHelplineDialog(data.issue_type || "pothole");
+        } else {
+          addToast("Verification successful! Ticket CLOSED.", "success");
+          setShowSuccessDialog(true);
+        }
       } else {
         addToast("Verification failed. Resolving parameters not met.", "error");
       }
@@ -391,8 +400,18 @@ export default function App() {
     setIsTicking(true);
     addToast("Orchestrator: Executing next autonomous step...", "info");
     try {
-      await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
+      const res = await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
+      const tickData = await res.json();
       addToast("Step executed successfully.", "success");
+      
+      if (tickData.status === "CLOSED") {
+        if (tickData.escalation_level >= (tickData.current_strategy?.escalation_path?.length || 0)) {
+          setShowHelplineDialog(tickData.issue_type || "pothole");
+        } else {
+          setShowSuccessDialog(true);
+        }
+      }
+      
       await fetchIncidentDetails(selectedIncId);
     } catch (err) {
       addToast("Tick execution failed.", "error");
