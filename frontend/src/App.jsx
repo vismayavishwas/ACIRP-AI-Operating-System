@@ -1544,7 +1544,7 @@ export default function App() {
                 }}
                 className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-2 px-6 rounded-xl text-xs transition shadow-lg shadow-blue-500/20"
               >
-                Acknowledge & Close Case
+                Accept & Close Case
               </button>
             </div>
           </div>
