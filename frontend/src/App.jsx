@@ -1183,19 +1183,7 @@ export default function App() {
                   <div className="p-4 rounded-2xl border border-white/5 bg-slate-950/20 flex flex-col justify-between text-left">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-slate-500">Next Planned Action</span>
-                      {selectedIncident.status === "CLOSED" && !selectedIncident.image_after_url ? (
-                        <div className="mt-2 space-y-3">
-                          <p className="text-xs text-slate-300 font-medium">Digital routing routes have been exhausted. Helpline fallback is suggested.</p>
-                          <button 
-                            onClick={() => setShowHelplineDialog(selectedIncident.issue_type)}
-                            className="w-full bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-blue-500/20"
-                          >
-                            Accept & Close Case
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-300 font-medium mt-1">{brainDecision?.next_action || "Waiting for initialization"}</p>
-                      )}
+                      <p className="text-xs text-slate-300 font-medium mt-1">{brainDecision?.next_action || "Waiting for initialization"}</p>
                     </div>
 
                     <div className="flex gap-2 pt-4">
