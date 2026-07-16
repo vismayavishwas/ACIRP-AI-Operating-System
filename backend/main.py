@@ -104,33 +104,36 @@ async def create_incident(
         next_action="Trigger Perception Agent Vision classifier"
     ))
     
-    # Retrieve complainant history from Mem0
-    try:
-        memories = mem0_mgr.search_memories("citizen complaints history", complainant_name)
-        if memories:
-            summary = "; ".join(memories[-2:])  # Take the last 2 memories for brevity
-            incident.timeline.append(TimelineEvent(
-                timestamp=datetime.now().strftime("%d %b %H:%M"),
-                stage="TOOL",
-                decision="Context Retrieved",
-                confidence="100%",
-                reason="Mem0 platform query successfully completed.",
-                next_action=f"Loaded past grievances from agent memory: {summary}"
-            ))
-    except Exception as e:
-        logger.error(f"Mem0 search error: {e}")
+    # Retrieve complainant history from Mem0 (Unstop only)
+    comp_id = comp_id_context.get()
+    if comp_id == "unstop":
+        try:
+            memories = mem0_mgr.search_memories("citizen complaints history", complainant_name)
+            if memories:
+                summary = "; ".join(memories[-2:])  # Take the last 2 memories for brevity
+                incident.timeline.append(TimelineEvent(
+                    timestamp=datetime.now().strftime("%d %b %H:%M"),
+                    stage="TOOL",
+                    decision="Context Retrieved",
+                    confidence="100%",
+                    reason="Mem0 platform query successfully completed.",
+                    next_action=f"Loaded past grievances from agent memory: {summary}"
+                ))
+        except Exception as e:
+            logger.error(f"Mem0 search error: {e}")
 
     # Run the Perception Agent directly (passing the dynamic MIME type)
     incident = await perception_agent.analyze(image_bytes, incident, mime_type=image.content_type or "image/jpeg")
     
-    # Store this incident file activity in Mem0 memory context
-    try:
-        mem0_mgr.add_memory(
-            content=f"Filed a {incident.issue_type} grievance at GPS ({latitude}, {longitude}) on {datetime.now().strftime('%d %b')}.",
-            user_id=complainant_name
-        )
-    except Exception as e:
-        logger.error(f"Mem0 add memory error: {e}")
+    # Store this incident file activity in Mem0 memory context (Unstop only)
+    if comp_id == "unstop":
+        try:
+            mem0_mgr.add_memory(
+                content=f"Filed a {incident.issue_type} grievance at GPS ({latitude}, {longitude}) on {datetime.now().strftime('%d %b')}.",
+                user_id=complainant_name
+            )
+        except Exception as e:
+            logger.error(f"Mem0 add memory error: {e}")
 
     # Save to mock database
     db.save_incident(incident)
