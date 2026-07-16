@@ -104,8 +104,8 @@ class PlanningAgent:
                 deadline = datetime.fromisoformat(incident.sla_deadline)
                 if datetime.now() > deadline:
                     escalation_paths = incident.current_strategy.escalation_path if incident.current_strategy else []
-                    incident.status = "ESCALATED"
                     if incident.escalation_level >= len(escalation_paths):
+                        incident.status = "CLOSED"
                         incident.timeline.append(TimelineEvent(
                             timestamp=timestamp,
                             stage="MONITOR",
@@ -115,6 +115,7 @@ class PlanningAgent:
                             next_action="Recommending manual dispatch via helpline."
                         ))
                     else:
+                        incident.status = "ESCALATED"
                         incident.timeline.append(TimelineEvent(
                             timestamp=timestamp,
                             stage="MONITOR",
