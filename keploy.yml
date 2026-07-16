@@ -1,0 +1,26 @@
+# Keploy Configuration File
+# Expose test runners and mock recorders for ACIRP Unstop backend testing
+
+record:
+  path: "./keploy"
+  delay: 5 # wait 5 seconds for FastAPI server to boot up
+  filters:
+    urlMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+    headers:
+      - "Content-Type"
+      - "Authorization"
+      - "x-competition" # Track our custom competition database router headers
+
+test:
+  path: "./keploy"
+  delay: 5
+  apiTimeout: 15 # seconds
+  ignoreRules:
+    - header: "Date"
+    - header: "Keep-Alive"
+    - body: "timestamp" # Ignore dynamic timestamps to prevent false test failures
+    - body: "id" # Ignore dynamic uuid incident IDs during replay comparisons
