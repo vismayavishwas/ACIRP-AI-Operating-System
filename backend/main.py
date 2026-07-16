@@ -123,7 +123,7 @@ async def create_incident(
             logger.error(f"Mem0 search error: {e}")
 
     # Run the Perception Agent directly (passing the dynamic MIME type)
-    incident = await perception_agent.analyze(image_bytes, incident, mime_type=image.content_type or "image/jpeg")
+    incident = await perception_agent.analyze(image_bytes, incident, mime_type=image.content_type or "image/jpeg", filename=image.filename)
     
     # Store this incident file activity in Mem0 memory context (Unstop only)
     if comp_id == "unstop":
@@ -198,7 +198,8 @@ async def verify_incident_resolution(
     # Trigger Verification Agent with dynamic MIME types
     incident = await verification_agent.verify(
         image_before_bytes, image_after_bytes, incident, 
-        before_mime=before_mime, after_mime=after_mime
+        before_mime=before_mime, after_mime=after_mime,
+        filename=image.filename
     )
     db.save_incident(incident)
     return incident
@@ -281,7 +282,7 @@ async def re_upload_image(incident_id: str, image: UploadFile = File(...)):
         next_action="Rerunning Perception Agent analysis"
     ))
     
-    incident = await perception_agent.analyze(image_bytes, incident, mime_type=image.content_type or "image/jpeg")
+    incident = await perception_agent.analyze(image_bytes, incident, mime_type=image.content_type or "image/jpeg", filename=image.filename)
     db.save_incident(incident)
     return incident
 
