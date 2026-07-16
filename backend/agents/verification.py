@@ -62,12 +62,11 @@ class VerificationAgent:
             incident.status = "CLOSED"
         else:
             escalation_paths = incident.current_strategy.escalation_path if incident.current_strategy else []
+            incident.status = "ESCALATED"
             if incident.escalation_level >= len(escalation_paths):
                 next_action_step = "Direct helpline contact suggested."
-                incident.status = "CLOSED"
             else:
                 next_action_step = "Escalate ticket to higher authority for review."
-                incident.status = "ESCALATED"
             
         event = TimelineEvent(
             timestamp=datetime.now().strftime("%d %b %H:%M"),

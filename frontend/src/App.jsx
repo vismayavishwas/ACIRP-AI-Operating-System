@@ -354,17 +354,8 @@ export default function App() {
       setVerifyFile(null);
       
       if (data.status === "CLOSED") {
-        const lastEvent = data.timeline?.[data.timeline.length - 1];
-        const isExhausted = lastEvent?.decision?.toLowerCase().includes("exhausted") || 
-                            data.escalation_level >= (data.current_strategy?.escalation_path?.length || 0);
-        
-        if (isExhausted) {
-          addToast("Verification failed & routes exhausted. Helpline suggested.", "warning");
-          setShowHelplineDialog(data.issue_type || "pothole");
-        } else {
-          addToast("Verification successful! Ticket CLOSED.", "success");
-          setShowSuccessDialog(true);
-        }
+        addToast("Verification successful! Ticket CLOSED.", "success");
+        setShowSuccessDialog(true);
       } else {
         addToast("Verification failed. Resolving parameters not met.", "error");
       }
@@ -383,13 +374,7 @@ export default function App() {
       await fetch(`${API_BASE}/api/incidents/${selectedIncId}/approve-escalation`, { method: "POST" });
       addToast("Escalation approved. Running agent strategy check...", "success");
       // Tick to advance strategy instantly
-      const tickRes = await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
-      const tickData = await tickRes.json();
-      
-      if (tickData.status === "CLOSED") {
-        setShowHelplineDialog(selectedIncident.issue_type || "pothole");
-      }
-      
+      await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
       fetchIncidentDetails(selectedIncId);
     } catch (err) {
       addToast("Escalation approval failed.", "error");
@@ -400,18 +385,8 @@ export default function App() {
     setIsTicking(true);
     addToast("Orchestrator: Executing next autonomous step...", "info");
     try {
-      const res = await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
-      const tickData = await res.json();
+      await fetch(`${API_BASE}/api/incidents/${selectedIncId}/tick`, { method: "POST" });
       addToast("Step executed successfully.", "success");
-      
-      if (tickData.status === "CLOSED") {
-        if (tickData.escalation_level >= (tickData.current_strategy?.escalation_path?.length || 0)) {
-          setShowHelplineDialog(tickData.issue_type || "pothole");
-        } else {
-          setShowSuccessDialog(true);
-        }
-      }
-      
       await fetchIncidentDetails(selectedIncId);
     } catch (err) {
       addToast("Tick execution failed.", "error");
@@ -419,6 +394,7 @@ export default function App() {
       setIsTicking(false);
     }
   };
+
 
   const handleMarkResolved = async () => {
     if (!selectedIncident?.official_token) return;
@@ -1110,8 +1086,8 @@ export default function App() {
                                   ) : (
                                     <>
                                       <AlertTriangle className="h-4.5 w-4.5 text-amber-400 mb-1 animate-pulse" />
-                                      <span>Escalated Close</span>
-                                      <span className="text-[7px] text-slate-600 lowercase mt-0.5 font-normal">(No Photo Proof)</span>
+                                      <span>Human Escalation</span>
+                                      <span className="text-[7px] text-slate-600 lowercase mt-0.5 font-normal">(Direct Helpline Fallback)</span>
                                     </>
                                   )
                                 ) : (
@@ -1310,8 +1286,16 @@ export default function App() {
               <div className="space-y-6">
                 <div className="flex justify-between items-center border-b border-white/5 pb-3">
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-rose-400">Human Interaction Required</span>
-                    <h2 className="font-outfit font-bold text-sm text-slate-100 mt-0.5">Approve Agent Escalation</h2>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-rose-400">
+                      {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                        ? "Digital Escalation Exhausted"
+                        : "Human Interaction Required"}
+                    </span>
+                    <h2 className="font-outfit font-bold text-sm text-slate-100 mt-0.5">
+                      {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                        ? "Helpline Dispatch Fallback"
+                        : "Approve Agent Escalation"}
+                    </h2>
                   </div>
                   <button 
                     onClick={() => { setSelectedIncId(""); setSelectedIncident(null); }} 
@@ -1323,87 +1307,80 @@ export default function App() {
 
                 <div className="space-y-3">
                   <div className="p-3.5 bg-rose-500/5 border border-rose-500/20 rounded-xl text-xs leading-relaxed text-rose-200/90 space-y-1.5">
-                    <p className="font-bold text-rose-400 uppercase tracking-widest text-[9px]">Trigger: {getEscalationReason()}</p>
-                    <p className="text-slate-300">
-                      The active incident has met threshold limits. Direct human approval is required to initiate the next escalation path level.
+                    <p className="font-bold text-rose-400 uppercase tracking-widest text-[9px]">
+                      {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                        ? "Status: Emergency Dispatch Fallback"
+                        : `Trigger: ${getEscalationReason()}`}
                     </p>
-                    <button 
-                      onClick={() => setMobileOverridePage("mockup")}
-                      className="lg:hidden w-full mt-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-300 font-bold py-1 px-2.5 rounded-lg text-[9px] transition"
-                    >
-                      🔍 Inspect Strategy Mockup
-                    </button>
+                    <p className="text-slate-300">
+                      {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                        ? "All automated digital routing paths have been exhausted. Please contact the department directly using the hotline details below to request manual field dispatch."
+                        : "The active incident has met threshold limits. Direct human approval is required to initiate the next escalation path level."}
+                    </p>
                   </div>
 
-                  <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 text-xs space-y-1.5 leading-normal text-slate-300">
-                    <p><strong>Department Route:</strong> {selectedIncident.current_strategy?.department}</p>
-                    <p><strong>Escalation Target:</strong> {
-                      selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
-                        ? "Exhausted (Helpline Fallback)"
-                        : (selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Commissioner")
-                    }</p>
-                    <p><strong>Current Level:</strong> {
-                      selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
-                        ? "Exhaustion Phase"
-                        : `Tier ${selectedIncident.escalation_level + 1} of ${selectedIncident.current_strategy?.escalation_path?.length || 0}`
-                    }</p>
-                  </div>
+                  {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0) ? (
+                    <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs p-4 rounded-xl space-y-2">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📞 Emergency Helpline Hotline</p>
+                      <p><strong>Department:</strong> {HELPLINES[selectedIncident.issue_type]?.dept || "Public Works Department"}</p>
+                      <p className="text-sm font-bold font-mono"> HotLine: {HELPLINES[selectedIncident.issue_type]?.phone || "080-2223-1800"}</p>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 text-xs space-y-1.5 leading-normal text-slate-300">
+                      <p><strong>Department Route:</strong> {selectedIncident.current_strategy?.department}</p>
+                      <p><strong>Escalation Target:</strong> {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Commissioner"}</p>
+                      <p><strong>Current Level:</strong> Tier {selectedIncident.escalation_level + 1} of {selectedIncident.current_strategy?.escalation_path?.length}</p>
+                    </div>
+                  )}
                 </div>
 
-                {/* Twitter composer prefilled display card */}
-                {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] === "Social Escalation" ? (
-                  <div className="bg-sky-500/5 border border-sky-500/20 rounded-xl p-3 space-y-2">
-                    <div className="text-[9px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1">
-                      <Radio className="h-3 w-3 text-sky-400 animate-pulse" /> Twitter/X Escalation Draft
-                    </div>
-                    <div className="bg-slate-950/60 border border-white/5 rounded-lg p-2.5 text-[11px] text-slate-200 shadow-sm font-sans space-y-1.5">
-                      <div className="flex gap-1.5 items-center">
-                        <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[8px] font-bold text-white font-mono">A</div>
-                        <div>
-                          <div className="font-bold text-slate-200 text-[10px] leading-tight">ACIRP Citizen Node</div>
-                          <div className="text-[8px] text-slate-500">@acirp_civic</div>
+                {selectedIncident.escalation_level < (selectedIncident.current_strategy?.escalation_path?.length || 0) && (
+                  <>
+                    {/* Twitter composer prefilled display card */}
+                    {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] === "Social Escalation" ? (
+                      <div className="bg-sky-500/5 border border-sky-500/20 rounded-xl p-3 space-y-2">
+                        <div className="text-[9px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1">
+                          <Radio className="h-3 w-3 text-sky-400 animate-pulse" /> Twitter/X Escalation Draft
+                        </div>
+                        <div className="bg-slate-950/60 border border-white/5 rounded-lg p-2.5 text-[11px] text-slate-200 shadow-sm font-sans space-y-1.5">
+                          <div className="flex gap-1.5 items-center">
+                            <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[8px] font-bold text-white font-mono">A</div>
+                            <div>
+                              <div className="font-bold text-slate-200 text-[10px] leading-tight">ACIRP Citizen Node</div>
+                              <div className="text-[8px] text-slate-500">@acirp_civic</div>
+                            </div>
+                          </div>
+                          <p className="leading-relaxed text-slate-300">
+                            🚨 ESCALATION: Civic {selectedIncident.issue_type} unresolved at coordinates {selectedIncident.latitude}, {selectedIncident.longitude} for {selectedIncident.current_strategy.sla_hours}h. Ref: {selectedIncident.official_token || "BBMP-REF"}. Urgent action required @BBMPCOMM @citizen_alert. #CivicResolve
+                          </p>
+                        </div>
+                        <a 
+                          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🚨 ESCALATION: Civic ${selectedIncident.issue_type} unresolved at coordinates ${selectedIncident.latitude}, ${selectedIncident.longitude} for ${selectedIncident.current_strategy.sla_hours}h. Ref: {selectedIncident.official_token || "BBMP-REF"}. Urgent action required @BBMPCOMM @citizen_alert. #CivicResolve`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full mt-1 flex items-center justify-center gap-1 bg-sky-500 hover:bg-sky-600 text-white font-bold py-1.5 rounded-lg text-[10px] transition shadow-md shadow-sky-500/10 pointer-events-auto"
+                        >
+                          🐦 Open Twitter/X Intent & Tweet
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 space-y-1.5">
+                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                          📞 Planned Action Target Details
+                        </div>
+                        <div className="text-[11px] text-slate-300 leading-normal space-y-1">
+                          <p><strong>Authority Name:</strong> {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Chief"}</p>
+                          <p><strong>Action Type:</strong> Official Municipal Dispatch Request & SLA Override</p>
+                          <p><strong>Automatic Notice:</strong> Send formal report template directly via API.</p>
                         </div>
                       </div>
-                      <p className="leading-relaxed text-slate-300">
-                        🚨 ESCALATION: Civic {selectedIncident.issue_type} unresolved at coordinates {selectedIncident.latitude}, {selectedIncident.longitude} for {selectedIncident.current_strategy.sla_hours}h. Ref: {selectedIncident.official_token || "BBMP-REF"}. Urgent action required @BBMPCOMM @citizen_alert. #CivicResolve
-                      </p>
-                    </div>
-                    <a 
-                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🚨 ESCALATION: Civic ${selectedIncident.issue_type} unresolved at coordinates ${selectedIncident.latitude}, ${selectedIncident.longitude} for ${selectedIncident.current_strategy.sla_hours}h. Ref: {selectedIncident.official_token || "BBMP-REF"}. Urgent action required @BBMPCOMM @citizen_alert. #CivicResolve`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full mt-1 flex items-center justify-center gap-1 bg-sky-500 hover:bg-sky-600 text-white font-bold py-1.5 rounded-lg text-[10px] transition shadow-md shadow-sky-500/10 pointer-events-auto"
-                    >
-                      🐦 Open Twitter/X Intent & Tweet
-                    </a>
-                  </div>
-                ) : (
-                  <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 space-y-1.5">
-                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                      📞 Planned Action Target Details
-                    </div>
-                    <div className="text-[11px] text-slate-300 leading-normal space-y-1">
-                      <p><strong>Authority Name:</strong> {
-                        selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
-                          ? "Direct Helpline Contact"
-                          : (selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Chief")
-                      }</p>
-                      <p><strong>Action Type:</strong> {
-                        selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
-                          ? "Direct Hotline Dispatch Notification"
-                          : "Official Municipal Dispatch Request & SLA Override"
-                      }</p>
-                      <p><strong>Automatic Notice:</strong> {
-                        selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
-                          ? "Digital routes exhausted. Direct user to phone call helpline."
-                          : "Send formal report template directly via API."
-                      }</p>
-                    </div>
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
               <div className="space-y-2 w-full">
-                {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] !== "Social Escalation" && (
+                {selectedIncident.escalation_level < (selectedIncident.current_strategy?.escalation_path?.length || 0) && 
+                 selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] !== "Social Escalation" && (
                   <a 
                     href={`${API_BASE}/api/incidents/${selectedIncident.id}/download-escalation-letter`}
                     download
@@ -1423,13 +1400,11 @@ export default function App() {
                     onClick={handleApproveEscalation}
                     className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-rose-500/20"
                   >
-                    {
-                      selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
-                        ? "Exhaust & Call Helpline"
-                        : "Approve Escalation"
-                    }
+                    {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                      ? "Acknowledge & Close Case"
+                      : "Approve Escalation"}
                   </button>
-              </div>
+                </div>
               </div>
             </motion.div>
           </div>
