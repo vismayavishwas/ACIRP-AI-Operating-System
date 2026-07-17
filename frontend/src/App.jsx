@@ -26,7 +26,7 @@ import {
 
 const CheckCircle = CheckCircle2;
 
-const API_BASE = "https://acirp-backend.onrender.com";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://acirp-backend.onrender.com";
 
 const ACTIVE_COMPETITION = "unstop"; // Set to "unstop" on comp-unstop branch
 
