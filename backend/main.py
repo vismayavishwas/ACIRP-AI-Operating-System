@@ -13,7 +13,6 @@ from config import GEMINI_API_KEY
 from agents.perception import PerceptionAgent
 from agents.planner import PlanningAgent
 from agents.verification import VerificationAgent
-from mem0_client import Mem0Manager
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -41,9 +40,8 @@ async def add_competition_context(request: Request, call_next):
         comp_id_context.reset(token)
     return response
 
-# Initialize Mock Database, Mem0 & AI Agents
+# Initialize Mock Database & AI Agents
 db = MockDB()
-mem0_mgr = Mem0Manager()
 perception_agent = PerceptionAgent(api_key=GEMINI_API_KEY)
 planner_agent = PlanningAgent(db=db)
 verification_agent = VerificationAgent(api_key=GEMINI_API_KEY)
@@ -103,37 +101,8 @@ async def create_incident(
         reason="Citizen filed new incident with GPS coordinates.",
         next_action="Trigger Perception Agent Vision classifier"
     ))
-    
-    # Retrieve complainant history from Mem0 (Unstop only)
-    comp_id = comp_id_context.get()
-    if comp_id == "unstop":
-        try:
-            memories = mem0_mgr.search_memories("citizen complaints history", complainant_name)
-            if memories:
-                summary = "; ".join(memories[-2:])  # Take the last 2 memories for brevity
-                incident.timeline.append(TimelineEvent(
-                    timestamp=datetime.now().strftime("%d %b %H:%M"),
-                    stage="TOOL",
-                    decision="Context Retrieved",
-                    confidence="100%",
-                    reason="Mem0 platform query successfully completed.",
-                    next_action=f"Loaded past grievances from agent memory: {summary}"
-                ))
-        except Exception as e:
-            logger.error(f"Mem0 search error: {e}")
-
     # Run the Perception Agent directly (passing the dynamic MIME type)
     incident = await perception_agent.analyze(image_bytes, incident, mime_type=image.content_type or "image/jpeg", filename=image.filename)
-    
-    # Store this incident file activity in Mem0 memory context (Unstop only)
-    if comp_id == "unstop":
-        try:
-            mem0_mgr.add_memory(
-                content=f"Filed a {incident.issue_type} grievance at GPS ({latitude}, {longitude}) on {datetime.now().strftime('%d %b')}.",
-                user_id=complainant_name
-            )
-        except Exception as e:
-            logger.error(f"Mem0 add memory error: {e}")
 
     # Save to mock database
     db.save_incident(incident)
