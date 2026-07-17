@@ -26,7 +26,7 @@ import {
 
 const CheckCircle = CheckCircle2;
 
-const API_BASE = "https://acirp-backend.onrender.com";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://acirp-backend.onrender.com";
 
 const ACTIVE_COMPETITION = "google"; // Set to "unstop" on comp-unstop branch
 
@@ -1379,7 +1379,7 @@ export default function App() {
                           </p>
                         </div>
                         <a 
-                          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🚨 ESCALATION: Civic ${selectedIncident.issue_type} unresolved at coordinates ${selectedIncident.latitude}, {selectedIncident.longitude} for ${selectedIncident.current_strategy.sla_hours}h. Ref: {selectedIncident.official_token || "BBMP-REF"}. Urgent action required @BBMPCOMM @citizen_alert. #CivicResolve`)}`}
+                          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🚨 ESCALATION: Civic ${selectedIncident.issue_type} unresolved at coordinates ${selectedIncident.latitude}, ${selectedIncident.longitude} for ${selectedIncident.current_strategy.sla_hours}h. Ref: ${selectedIncident.official_token || "BBMP-REF"}. Urgent action required @BBMPCOMM @citizen_alert. #CivicResolve`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="w-full mt-1 flex items-center justify-center gap-1 bg-sky-500 hover:bg-sky-600 text-white font-bold py-1.5 rounded-lg text-[10px] transition shadow-md shadow-sky-500/10 pointer-events-auto"

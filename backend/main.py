@@ -122,6 +122,7 @@ async def create_incident(
         except Exception as e:
             logger.error(f"Mem0 search error: {e}")
 
+    # Run the Perception Agent directly (passing the dynamic MIME type)
     incident = await perception_agent.analyze(image_bytes, incident, mime_type=image.content_type or "image/jpeg", filename=image.filename)
     
     # Store this incident file activity in Mem0 memory context (Unstop only)
@@ -281,7 +282,7 @@ async def re_upload_image(incident_id: str, image: UploadFile = File(...)):
         next_action="Rerunning Perception Agent analysis"
     ))
     
-    incident = await perception_agent.analyze(image_bytes, incident, mime_type=image.content_type or "image/jpeg")
+    incident = await perception_agent.analyze(image_bytes, incident, mime_type=image.content_type or "image/jpeg", filename=image.filename)
     db.save_incident(incident)
     return incident
 

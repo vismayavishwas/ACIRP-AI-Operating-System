@@ -28,7 +28,7 @@ class PerceptionAgent:
             confidence: float = Field(description="Score between 0.0 and 1.0")
             severity: Literal["low", "medium", "high"]
             reasoning: str
-
+ 
         try:
             response = self.client.models.generate_content(
                 model='gemini-2.5-flash',
@@ -43,27 +43,27 @@ class PerceptionAgent:
             )
             result = json.loads(response.text)
         except Exception as e:
-            # Failure recovery fallback if Gemini API is down or invalid image format
-            filename_lower = filename.lower()
-            if "pothole" in filename_lower:
-                issue_type = "pothole"
-                reasoning = "Perceived pothole hazard from uploaded filename."
-            elif "tree" in filename_lower or "forest" in filename_lower:
-                issue_type = "fallen_tree"
-                reasoning = "Perceived fallen tree hazard from uploaded filename."
-            elif "garbage" in filename_lower or "trash" in filename_lower or "waste" in filename_lower:
-                issue_type = "garbage"
-                reasoning = "Perceived garbage hazard from uploaded filename."
+            # Failure recovery fallback if Gemini API is down, rate limited, or quota exhausted
+            err_str = str(e)
+            
+            # Intelligent fallback guessing from filename
+            name_lower = filename.lower()
+            if "pothole" in name_lower:
+                fallback_type = "pothole"
+            elif "tree" in name_lower or "fallen" in name_lower:
+                fallback_type = "fallen_tree"
+            elif "garbage" in name_lower or "waste" in name_lower:
+                fallback_type = "garbage"
+            elif incident.issue_type and incident.issue_type != "unknown":
+                fallback_type = incident.issue_type
             else:
-                # Default fallback: pick pothole (most common)
-                issue_type = "pothole"
-                reasoning = f"Gemini API offline (429 quota/500). Mock-fallback to pothole classification."
-
+                fallback_type = "pothole"
+                
             result = {
-                "issue_type": issue_type,
-                "confidence": 0.95,
+                "issue_type": fallback_type,
+                "confidence": 0.88,
                 "severity": "medium",
-                "reasoning": reasoning
+                "reasoning": f"Failover Mock Active (Gemini API rate-limited: {err_str[:40]}...)"
             }
             
         conf_percent = f"{int(result['confidence'] * 100)}%"

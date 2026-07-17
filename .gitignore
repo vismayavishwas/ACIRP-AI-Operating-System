@@ -27,3 +27,12 @@ backend/static/letters/
 *.njsproj
 *.sln
 *.swp
+
+# Testing and coverage
+.pytest_cache/
+backend/.coverage
+backend/coverage.xml
+htmlcov/
+
+# Local uploaded images
+backend/uploaded_images/
