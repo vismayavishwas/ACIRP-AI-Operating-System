@@ -4,12 +4,12 @@ from typing import Optional
 from models import Incident, TimelineEvent, Strategy, PlannerDecision
 from config import DEFAULT_ROUTING
 from tools.portal_client import submit_to_portal_hybrid
-from db_mock import MockDB
+from db.base import BaseDatabase
 
 logger = logging.getLogger("acirp.planner")
 
 class PlanningAgent:
-    def __init__(self, db: MockDB):
+    def __init__(self, db: BaseDatabase):
         self.db = db
 
     async def execute_step(self, incident: Incident, submission_mode: str = "api") -> Incident:

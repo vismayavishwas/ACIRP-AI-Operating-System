@@ -179,6 +179,30 @@ async def test_planner_monitoring_sla_breach_exhausted():
     )
     
     updated = await agent.execute_step(incident)
-    
     assert updated.status == "CLOSED"
     assert "SLA Breach - Routes Exhausted" in updated.timeline[-1].decision
+
+def test_planner_get_brain_decision():
+    mock_db = MagicMock()
+    agent = PlanningAgent(db=mock_db)
+    
+    incident = Incident(
+        id="inc_123",
+        status="AWAITING_REUPLOAD",
+        complainant_name="Bob",
+        latitude=12.97,
+        longitude=77.59,
+        image_before_url="http://example.com/before.jpg",
+        confidence=0.50
+    )
+    decision = agent.get_brain_decision(incident)
+    assert decision.current_state == "AWAITING_REUPLOAD"
+    assert decision.requires_human is True
+    assert decision.confidence == 0.50
+
+    incident.status = "CLOSED"
+    incident.goal = "Completed cleanup"
+    decision = agent.get_brain_decision(incident)
+    assert decision.current_state == "CLOSED"
+    assert decision.requires_human is False
+    assert decision.goal == "Completed cleanup"

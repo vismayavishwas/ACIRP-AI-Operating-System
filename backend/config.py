@@ -19,6 +19,9 @@ class Settings(BaseModel):
     monitor_sleep_interval_sec: int = Field(default=10)
     max_portal_retries: int = Field(default=3)
 
+    # Database Configuration
+    db_provider: str = Field(default="json")
+
     # Standard Strategic Workflows
     default_routing: dict[str, Strategy] = Field(default_factory=lambda: {
         "garbage": Strategy(

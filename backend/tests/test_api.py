@@ -12,9 +12,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 temp_db_fd, temp_db_path = tempfile.mkstemp(suffix="_test_db.json")
 os.close(temp_db_fd)
 
-import db_mock
+import db.json_db
 # Override the database file path
-db_mock.DB_FILE = temp_db_path
+db.json_db.DB_FILE = temp_db_path
 
 from main import app, db, perception_agent, planner_agent, verification_agent
 from models import Incident, Strategy, TimelineEvent
@@ -141,6 +141,46 @@ def test_simulator_mark_resolved():
     
     updated = db.get_incident("inc_monitored")
     assert updated.status == "VERIFYING"
+
+def test_simulator_trigger_sla_breach_not_found():
+    response = client.post("/api/simulator/trigger-sla-breach/inc_missing")
+    assert response.status_code == 404
+
+def test_simulator_simulate_crash_not_found():
+    response = client.post("/api/simulator/simulate-crash/inc_missing")
+    assert response.status_code == 404
+
+def test_approve_escalation_not_found():
+    response = client.post("/api/incidents/inc_missing/approve-escalation")
+    assert response.status_code == 404
+
+def test_approve_escalation_not_escalated():
+    incident = Incident(
+        id="inc_not_escalated",
+        status="PLANNED",
+        latitude=12.97,
+        longitude=77.59,
+        image_before_url="http://example.com/before.jpg"
+    )
+    db.save_incident(incident)
+    response = client.post("/api/incidents/inc_not_escalated/approve-escalation")
+    assert response.status_code == 400
+    assert "does not require escalation" in response.json()["detail"]
+
+def test_re_upload_image_not_awaiting():
+    incident = Incident(
+        id="inc_not_awaiting",
+        status="PLANNED",
+        latitude=12.97,
+        longitude=77.59,
+        image_before_url="http://example.com/before.jpg"
+    )
+    db.save_incident(incident)
+    files = {"image": ("test.jpg", b"fake-bytes", "image/jpeg")}
+    response = client.post("/api/incidents/inc_not_awaiting/re-upload-image", files=files)
+    assert response.status_code == 400
+    assert "not awaiting photo re-upload" in response.json()["detail"]
+
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_temp_db():
