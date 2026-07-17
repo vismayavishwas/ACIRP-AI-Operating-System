@@ -1,0 +1,15 @@
+[flake8]
+# Ignore styling preferences to focus linting on code bugs and correctness
+# E302: expected 2 blank lines
+# E305: expected 2 blank lines after class or function definition
+# E402: module level import not at top of file
+# E501: line too long
+# W291: trailing whitespace
+# W293: blank line contains whitespace
+# F401: module imported but unused
+# F841: local variable assigned but unused
+# E226: missing whitespace around arithmetic operator
+# F541: f-string missing placeholders
+ignore = E302,E305,E402,E501,W291,W293,F401,F841,E226,F541
+exclude = venv, .venv, __pycache__, .git, build, dist
+max-line-length = 120

@@ -8,7 +8,8 @@ from fastapi.responses import HTMLResponse
 from typing import List, Optional
 
 from models import Incident, TimelineEvent, PlannerDecision, Strategy
-from db_mock import MockDB, comp_id_context
+from db.factory import get_db
+from db.firebase_db import comp_id_context
 from config import GEMINI_API_KEY
 from agents.perception import PerceptionAgent
 from agents.planner import PlanningAgent
@@ -41,7 +42,7 @@ async def add_competition_context(request: Request, call_next):
     return response
 
 # Initialize Mock Database & AI Agents
-db = MockDB()
+db = get_db()
 perception_agent = PerceptionAgent(api_key=GEMINI_API_KEY)
 planner_agent = PlanningAgent(db=db)
 verification_agent = VerificationAgent(api_key=GEMINI_API_KEY)
@@ -322,7 +323,7 @@ async def submit_mock_portal_complaint(data: dict):
 async def get_mock_portal_ticket(token: str):
     ticket = MOCK_PORTAL_TICKETS.get(token)
     if not ticket:
-         raise HTTPException(status_code=404, detail="Ticket token not found")
+        raise HTTPException(status_code=404, detail="Ticket token not found")
     return ticket
 
 # ---------------------------------------------------------
@@ -336,7 +337,7 @@ async def simulator_mark_resolved(token: str):
     Allows the monitoring agent to detect change and transition state.
     """
     if token not in MOCK_PORTAL_TICKETS:
-         raise HTTPException(status_code=404, detail="Token not found in Mock Portal")
+        raise HTTPException(status_code=404, detail="Token not found in Mock Portal")
          
     MOCK_PORTAL_TICKETS[token]["status"] = "RESOLVED"
     
