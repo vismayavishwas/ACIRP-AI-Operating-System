@@ -153,6 +153,7 @@ export default function App() {
   const [complainantName, setComplainantName] = useState("");
   const [isTicking, setIsTicking] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const isFirstLoadRef = useRef(true);
   const [showPortalCrashDialog, setShowPortalCrashDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showDemoGuide, setShowDemoGuide] = useState(false);
