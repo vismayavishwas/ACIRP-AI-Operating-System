@@ -282,8 +282,9 @@ export default function App() {
       const data = await res.json();
       setSelectedIncident(data);
       
-      const isExhausted = data.escalation_level >= (data.current_strategy?.escalation_path?.length || 0);
-      const hasCrash = data.timeline?.some(event => event.decision === "Portal submission failed");
+      const isClosed = data.status === "CLOSED";
+      const isExhausted = isClosed && (data.escalation_level >= (data.current_strategy?.escalation_path?.length || 0));
+      const hasCrash = isClosed && data.timeline?.some(event => event.decision === "Portal submission failed");
       if (isExhausted || hasCrash) {
         setShowPortalCrashDialog(true);
       } else {
