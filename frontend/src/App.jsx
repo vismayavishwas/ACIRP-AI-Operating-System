@@ -272,6 +272,13 @@ export default function App() {
       const res = await fetch(`${API_BASE}/api/incidents/${id}`);
       const data = await res.json();
       setSelectedIncident(data);
+      
+      const isExhausted = data.escalation_level >= (data.current_strategy?.escalation_path?.length || 0);
+      if (isExhausted) {
+        setShowHelplineDialog(data.issue_type || "pothole");
+      } else {
+        setShowHelplineDialog(null);
+      }
 
       const decRes = await fetch(`${API_BASE}/api/incidents/${id}/decision`);
       const decData = await decRes.json();
@@ -1288,7 +1295,9 @@ export default function App() {
 
       {/* Human Escalation Approval slide-over notification card */}
       <AnimatePresence>
-        {selectedIncident?.status === "ESCALATED" && mobileOverridePage !== "mockup" && (
+        {selectedIncident?.status === "ESCALATED" && 
+         selectedIncident.escalation_level < (selectedIncident.current_strategy?.escalation_path?.length || 0) && 
+         mobileOverridePage !== "mockup" && (
           <div className="fixed inset-0 z-50 flex items-end lg:items-stretch justify-center lg:justify-end">
             {/* Modal backdrop */}
             <motion.div 
@@ -1332,30 +1341,18 @@ export default function App() {
                 <div className="space-y-3">
                   <div className="p-3.5 bg-rose-500/5 border border-rose-500/20 rounded-xl text-xs leading-relaxed text-rose-200/90 space-y-1.5">
                     <p className="font-bold text-rose-400 uppercase tracking-widest text-[9px]">
-                      {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
-                        ? "Status: Emergency Dispatch Fallback"
-                        : `Trigger: ${getEscalationReason()}`}
+                      Trigger: {getEscalationReason()}
                     </p>
                     <p className="text-slate-300">
-                      {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
-                        ? "All automated digital routing paths have been exhausted. Please contact the department directly using the hotline details below to request manual field dispatch."
-                        : "The active incident has met threshold limits. Direct human approval is required to initiate the next escalation path level."}
+                      The active incident has met threshold limits. Direct human approval is required to initiate the next escalation path level.
                     </p>
                   </div>
 
-                  {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0) ? (
-                    <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs p-4 rounded-xl space-y-2">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📞 Emergency Helpline Hotline</p>
-                      <p><strong>Department:</strong> {HELPLINES[selectedIncident.issue_type]?.dept || "Public Works Department"}</p>
-                      <p className="text-sm font-bold font-mono"> HotLine: {HELPLINES[selectedIncident.issue_type]?.phone || "080-2223-1800"}</p>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 text-xs space-y-1.5 leading-normal text-slate-300">
-                      <p><strong>Department Route:</strong> {selectedIncident.current_strategy?.department}</p>
-                      <p><strong>Escalation Target:</strong> {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Commissioner"}</p>
-                      <p><strong>Current Level:</strong> Tier {selectedIncident.escalation_level + 1} of {selectedIncident.current_strategy?.escalation_path?.length}</p>
-                    </div>
-                  )}
+                  <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 text-xs space-y-1.5 leading-normal text-slate-300">
+                    <p><strong>Department Route:</strong> {selectedIncident.current_strategy?.department}</p>
+                    <p><strong>Escalation Target:</strong> {selectedIncident.current_strategy?.escalation_path?.[selectedIncident.escalation_level] || "Zonal Commissioner"}</p>
+                    <p><strong>Current Level:</strong> Tier {selectedIncident.escalation_level + 1} of {selectedIncident.current_strategy?.escalation_path?.length}</p>
+                  </div>
                 </div>
 
                 {selectedIncident.escalation_level < (selectedIncident.current_strategy?.escalation_path?.length || 0) && (
@@ -1424,9 +1421,7 @@ export default function App() {
                     onClick={handleApproveEscalation}
                     className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-rose-500/20"
                   >
-                    {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
-                      ? "Acknowledge & Close Case"
-                      : "Approve Escalation"}
+                    Approve Escalation
                   </button>
                 </div>
               </div>
@@ -1474,55 +1469,40 @@ export default function App() {
       )}
 
       {showHelplineDialog && selectedIncident && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#16111C]/95 border border-rose-500/20 max-w-2xl w-full rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl text-left relative overflow-hidden">
-            {/* Ambient glows */}
-            <div className="absolute -top-24 -left-24 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl" />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl" />
-
-            <div className="flex items-center gap-3 text-rose-400 border-b border-white/5 pb-4 relative z-10">
-              <Phone className="h-6 w-6 animate-pulse" />
-              <div>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-rose-400">Escalation Threshold Met</span>
-                <h3 className="font-outfit font-bold text-base text-slate-100 mt-0.5">
-                  Digital Routing Exhausted: Helpline Fallback Required
-                </h3>
-              </div>
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/5 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl text-left">
+            <div className="flex items-center gap-2 text-rose-400 border-b border-white/5 pb-3">
+              <AlertTriangle className="h-5 w-5 animate-pulse" />
+              <h3 className="font-outfit font-bold text-sm text-slate-100">
+                No Actions Left: Helpline Fallback Required
+              </h3>
             </div>
             
-            <p className="text-xs text-slate-300 leading-relaxed relative z-10">
-              All automated digital escalation paths have been fully exhausted for this case. The system has completed its digital loop (portal submission, public tracking, and social media escalations). Please contact the direct municipal helpline hotline below for manual dispatcher field action.
+            <p className="text-xs text-slate-300 leading-relaxed">
+              All automated digital escalation paths (portal submissions, official grievances, and public social media posts) have been fully exhausted. No further actions can be taken automatically.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-              {/* Helpline card */}
-              <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 p-4 rounded-2xl flex flex-col justify-between space-y-3">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📞 Emergency hotline contact</p>
-                  <p className="text-xs text-slate-200 mt-1"><strong>Department:</strong> {HELPLINES[showHelplineDialog]?.dept || "Public Works Department"}</p>
-                </div>
-                <p className="text-sm font-bold font-mono text-slate-100">
-                  HotLine: {HELPLINES[showHelplineDialog]?.phone || "080-2223-1800"}
-                </p>
-              </div>
-
-              {/* Dossier Card */}
-              <div className="bg-slate-950/40 border border-white/5 p-4 rounded-2xl flex flex-col justify-between space-y-3">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📋 Case Dossier & Letter</p>
-                  <p className="text-xs text-slate-300 mt-1">Download the generated formal grievance letter containing all coordinates, timestamps, and image links.</p>
-                </div>
-                <a 
-                  href={`${API_BASE}/api/incidents/${selectedIncident.id}/download-escalation-letter`}
-                  download
-                  className="w-full flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-2 rounded-xl text-xs transition border border-white/5 shadow-sm"
-                >
-                  📥 Download Dossier (HTML)
-                </a>
-              </div>
+            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs p-4 rounded-xl space-y-2">
+              <p><strong>Emergency Dispatch Contact Suggestion:</strong></p>
+              <p className="font-semibold">Dept: {HELPLINES[showHelplineDialog]?.dept || "Public Works Department"}</p>
+              <p className="text-sm font-bold font-mono">📞 Hotline: {HELPLINES[showHelplineDialog]?.phone || "080-2223-1800"}</p>
             </div>
-            
-            <div className="pt-2 flex justify-end relative z-10 border-t border-white/5">
+
+            <div className="bg-slate-950/40 border border-white/5 p-4 rounded-xl flex flex-col justify-between space-y-3">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📋 Case Dossier & Letter</p>
+                <p className="text-[11px] text-slate-300 mt-1">Download the generated formal grievance letter containing all coordinates, timestamps, and image links.</p>
+              </div>
+              <a 
+                href={`${API_BASE}/api/incidents/${selectedIncident.id}/download-escalation-letter`}
+                download
+                className="w-full flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-2 rounded-xl text-xs transition border border-white/5 shadow-sm"
+              >
+                📥 Download Dossier (HTML)
+              </a>
+            </div>
+
+            <div className="pt-2 flex justify-end">
               <button 
                 onClick={() => {
                   setShowHelplineDialog(null);
@@ -1531,7 +1511,7 @@ export default function App() {
                   setBrainDecision(null);
                   setVerifyFile(null);
                 }}
-                className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-2 px-6 rounded-xl text-xs transition shadow-lg shadow-blue-500/20"
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-4 rounded-xl text-xs transition"
               >
                 Accept & Close Case
               </button>
