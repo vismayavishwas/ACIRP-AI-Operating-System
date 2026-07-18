@@ -56,7 +56,7 @@ const STAGE_ICONS = {
 };
 
 // Conversational Agent Thought generator
-const getAgentThought = (status) => {
+const getAgentThought = (status, incident) => {
   switch (status) {
     case "DETECTED":
       return "Sensing visual input... Classifying incident category and identifying geographical coordinates.";
@@ -71,6 +71,16 @@ const getAgentThought = (status) => {
     case "ESCALATED":
       return "SLA BREACH ALERT: Official response window exceeded. Bypassing database loops to route direct complaints to supervisors.";
     case "CLOSED":
+      if (incident) {
+        const hasCrash = incident.timeline?.some(e => e.decision === "Portal submission failed");
+        const isExhausted = incident.escalation_level >= (incident.current_strategy?.escalation_path?.length || 0);
+        if (hasCrash) {
+          return "Government portal offline (HTTP 504). Case closed with emergency hotline suggested.";
+        }
+        if (isExhausted) {
+          return "All digital escalation paths exhausted. Case closed with emergency hotline suggested.";
+        }
+      }
       return "Civic hazard cleared and verified. Complaint case successfully closed. System idle.";
     default:
       return "System initialized. Upload a photo in the Citizen Terminal to wake up the planning core.";
@@ -143,9 +153,7 @@ export default function App() {
   const [complainantName, setComplainantName] = useState("");
   const [isTicking, setIsTicking] = useState(false);
   const [toasts, setToasts] = useState([]);
-  const isFirstLoadRef = useRef(true);
   const [showPortalCrashDialog, setShowPortalCrashDialog] = useState(false);
-  const [showHelplineDialog, setShowHelplineDialog] = useState(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showDemoGuide, setShowDemoGuide] = useState(false);
   
@@ -274,10 +282,11 @@ export default function App() {
       setSelectedIncident(data);
       
       const isExhausted = data.escalation_level >= (data.current_strategy?.escalation_path?.length || 0);
-      if (isExhausted) {
-        setShowHelplineDialog(data.issue_type || "pothole");
+      const hasCrash = data.timeline?.some(event => event.decision === "Portal submission failed");
+      if (isExhausted || hasCrash) {
+        setShowPortalCrashDialog(true);
       } else {
-        setShowHelplineDialog(null);
+        setShowPortalCrashDialog(false);
       }
 
       const decRes = await fetch(`${API_BASE}/api/incidents/${id}/decision`);
@@ -367,7 +376,7 @@ export default function App() {
         
         if (isExhausted) {
           addToast("Verification failed & routes exhausted. Helpline suggested.", "warning");
-          setShowHelplineDialog(data.issue_type || "pothole");
+          setShowPortalCrashDialog(true);
         } else {
           addToast("Verification successful! Ticket CLOSED.", "success");
           setShowSuccessDialog(true);
@@ -396,7 +405,7 @@ export default function App() {
       if (tickData.status === "CLOSED") {
         const isExhausted = tickData.escalation_level >= (tickData.current_strategy?.escalation_path?.length || 0);
         if (isExhausted) {
-          setShowHelplineDialog(tickData.issue_type || "pothole");
+          setShowPortalCrashDialog(true);
         }
       }
       
@@ -416,7 +425,7 @@ export default function App() {
       
       if (tickData.status === "CLOSED") {
         if (tickData.escalation_level >= (tickData.current_strategy?.escalation_path?.length || 0)) {
-          setShowHelplineDialog(tickData.issue_type || "pothole");
+          setShowPortalCrashDialog(true);
         } else {
           setShowSuccessDialog(true);
         }
@@ -455,7 +464,7 @@ export default function App() {
       
       if (tickData.status === "CLOSED") {
         if (tickData.escalation_level >= (tickData.current_strategy?.escalation_path?.length || 0)) {
-          setShowHelplineDialog(tickData.issue_type || "pothole");
+          setShowPortalCrashDialog(true);
         }
       }
       
@@ -1066,7 +1075,7 @@ export default function App() {
                 <div>
                   <span className="text-[10px] uppercase tracking-wider font-extrabold text-blue-400 px-2.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded-full">🧠 Agent Status</span>
                   <p className="font-outfit font-bold text-sm text-slate-200 leading-relaxed mt-2.5">
-                    {getAgentThought(selectedIncident?.status)}
+                    {getAgentThought(selectedIncident?.status, selectedIncident)}
                   </p>
                 </div>
                 {selectedIncident && (
@@ -1436,12 +1445,16 @@ export default function App() {
             <div className="flex items-center gap-2 text-rose-400 border-b border-white/5 pb-3">
               <AlertTriangle className="h-5 w-5 animate-pulse" />
               <h3 className="font-outfit font-bold text-sm text-slate-100">
-                Government Portal Offline (HTTP 504)
+                {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                  ? "No Actions Left: Helpline Fallback Required"
+                  : "Government Portal Offline (HTTP 504)"}
               </h3>
             </div>
             
             <p className="text-xs text-slate-300 leading-relaxed">
-              The autonomous agent encountered a gateway connection timeout while submitting the petition to the municipal portal. Portal database integration has failed.
+              {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                ? "All automated digital escalation paths (portal submissions, official grievances, and public social media posts) have been fully exhausted. No further actions can be taken automatically."
+                : "The autonomous agent encountered a gateway connection timeout while submitting the petition to the municipal portal. Portal database integration has failed."}
             </p>
 
             <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs p-4 rounded-xl space-y-2">
@@ -1449,6 +1462,22 @@ export default function App() {
               <p className="font-semibold">Dept: {HELPLINES[selectedIncident.issue_type]?.dept || "Public Works Department"}</p>
               <p className="text-sm font-bold font-mono">📞 Hotline: {HELPLINES[selectedIncident.issue_type]?.phone || "080-2223-1800"}</p>
             </div>
+
+            {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0) && (
+              <div className="bg-slate-950/40 border border-white/5 p-4 rounded-xl flex flex-col justify-between space-y-3">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📋 Case Dossier & Letter</p>
+                  <p className="text-[11px] text-slate-300 mt-1">Download the generated formal grievance letter containing all coordinates, timestamps, and image links.</p>
+                </div>
+                <a 
+                  href={`${API_BASE}/api/incidents/${selectedIncident.id}/download-escalation-letter`}
+                  download
+                  className="w-full flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-2 rounded-xl text-xs transition border border-white/5 shadow-sm"
+                >
+                  📥 Download Dossier (HTML)
+                </a>
+              </div>
+            )}
 
             <div className="pt-2 flex justify-end">
               <button 
@@ -1461,59 +1490,9 @@ export default function App() {
                 }}
                 className="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-4 rounded-xl text-xs transition"
               >
-                Acknowledge & Archive Case
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showHelplineDialog && selectedIncident && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-white/5 max-w-md w-full rounded-2xl p-5 space-y-4 shadow-2xl text-left">
-            <div className="flex items-center gap-2 text-rose-400 border-b border-white/5 pb-3">
-              <AlertTriangle className="h-5 w-5 animate-pulse" />
-              <h3 className="font-outfit font-bold text-sm text-slate-100">
-                No Actions Left: Helpline Fallback Required
-              </h3>
-            </div>
-            
-            <p className="text-xs text-slate-300 leading-relaxed">
-              All automated digital escalation paths (portal submissions, official grievances, and public social media posts) have been fully exhausted. No further actions can be taken automatically.
-            </p>
-
-            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs p-4 rounded-xl space-y-2">
-              <p><strong>Emergency Dispatch Contact Suggestion:</strong></p>
-              <p className="font-semibold">Dept: {HELPLINES[showHelplineDialog]?.dept || "Public Works Department"}</p>
-              <p className="text-sm font-bold font-mono">📞 Hotline: {HELPLINES[showHelplineDialog]?.phone || "080-2223-1800"}</p>
-            </div>
-
-            <div className="bg-slate-950/40 border border-white/5 p-4 rounded-xl flex flex-col justify-between space-y-3">
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📋 Case Dossier & Letter</p>
-                <p className="text-[11px] text-slate-300 mt-1">Download the generated formal grievance letter containing all coordinates, timestamps, and image links.</p>
-              </div>
-              <a 
-                href={`${API_BASE}/api/incidents/${selectedIncident.id}/download-escalation-letter`}
-                download
-                className="w-full flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-2 rounded-xl text-xs transition border border-white/5 shadow-sm"
-              >
-                📥 Download Dossier (HTML)
-              </a>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button 
-                onClick={() => {
-                  setShowHelplineDialog(null);
-                  setSelectedIncId("");
-                  setSelectedIncident(null);
-                  setBrainDecision(null);
-                  setVerifyFile(null);
-                }}
-                className="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-4 rounded-xl text-xs transition"
-              >
-                Accept & Close Case
+                {selectedIncident.escalation_level >= (selectedIncident.current_strategy?.escalation_path?.length || 0)
+                  ? "Accept & Close Case"
+                  : "Acknowledge & Archive Case"}
               </button>
             </div>
           </div>
