@@ -10,7 +10,7 @@ MEM0_DB_FILE = os.path.join(os.path.dirname(__file__), "mem0_db.json")
 
 class Mem0Manager:
     def __init__(self):
-        self.api_key = os.getenv("MEM0_API_KEY")
+        self.api_key = os.getenv("MEM0_API_KEY", "m0-RHYeXRgMDvKrIaownVtR9T4sC1O8197pM6XRxo3R")
         self.base_url = "https://api.mem0.ai/v1"
         self.use_cloud = bool(self.api_key)
         
