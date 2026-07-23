@@ -2,7 +2,6 @@ import os
 import sys
 import tempfile
 import pytest
-from datetime import datetime, timedelta
 from unittest.mock import patch, mock_open, AsyncMock
 from config import DEFAULT_ROUTING
 
@@ -17,8 +16,8 @@ import db.json_db
 db.json_db.DB_FILE = temp_db_path
 
 from fastapi.testclient import TestClient
-from main import app, db, perception_agent, planner_agent, verification_agent
-from models import Incident, Strategy, TimelineEvent
+from main import app, db, perception_agent, verification_agent
+from models import Incident, TimelineEvent
 
 client = TestClient(app)
 
