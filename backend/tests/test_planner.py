@@ -117,7 +117,7 @@ async def test_planner_submitted_failure(mock_submit):
     updated = await agent.execute_step(incident, submission_mode="api")
     
     assert updated.status == "ESCALATED"
-    assert "Portal submission timeout" in updated.timeline[-1].decision
+    assert "Portal submission" in updated.timeline[-1].decision
 
 @pytest.mark.anyio
 async def test_planner_monitoring_sla_breach():

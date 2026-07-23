@@ -29,7 +29,8 @@ class Mem0Manager:
         try:
             with open(MEM0_DB_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
+        except (IOError, OSError, json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"Mem0 local DB read error ({type(e).__name__}): {e}")
             return {}
 
     def add_memory(self, content: str, user_id: str):
@@ -59,8 +60,8 @@ class Mem0Manager:
                     logger.info(f"Mem0 Cloud: Added memory for {sanitized_user_id}")
                 else:
                     logger.error(f"Mem0 Cloud error: {r.status_code} - {r.text}")
-            except Exception as e:
-                logger.error(f"Failed to save to Mem0 Cloud: {e}")
+            except (httpx.HTTPError, httpx.RequestError, json.JSONDecodeError, Exception) as e:
+                logger.error(f"Failed to save to Mem0 Cloud ({type(e).__name__}): {e}")
         
         # Local fallback persistence
         data = self._read_local_db()
@@ -103,8 +104,8 @@ class Mem0Manager:
                             elif isinstance(item, dict) and "content" in item:
                                 results.append(item["content"])
                     return results
-            except Exception as e:
-                logger.error(f"Failed to query Mem0 Cloud: {e}")
+            except (httpx.HTTPError, httpx.RequestError, json.JSONDecodeError, Exception) as e:
+                logger.error(f"Failed to query Mem0 Cloud ({type(e).__name__}): {e}")
 
         # Local fallback search
         data = self._read_local_db()
