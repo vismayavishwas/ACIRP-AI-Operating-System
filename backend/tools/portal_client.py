@@ -16,8 +16,9 @@ async def submit_to_portal_hybrid(incident_data: dict, mode: str = "api") -> str
     if mode == "playwright":
         try:
             return await submit_via_playwright(incident_data)
-        except Exception as e:
-            logger.warning(f"Playwright submission failed: {e}. Falling back to direct API submission.")
+        except (httpx.HTTPError, httpx.TimeoutException, TimeoutError, ValueError, RuntimeError, Exception) as e:
+            err_type = type(e).__name__
+            logger.warning(f"Playwright submission failed ({err_type}): {e}. Falling back to direct API submission.")
             # Fall back to API mode on failure
             return await submit_via_api(incident_data)
     else:

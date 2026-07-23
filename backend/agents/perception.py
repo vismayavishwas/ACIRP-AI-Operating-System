@@ -1,16 +1,21 @@
 import json
+import logging
+import httpx
 from google import genai
-from google.genai import types
+from google.genai import types, errors as genai_errors
 from models import Incident, TimelineEvent
 from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import Literal
 from config import PHOTO_CONFIDENCE_THRESHOLD
 
+logger = logging.getLogger("acirp.perception")
+
 class PerceptionAgent:
     def __init__(self, api_key: str):
-        # The new Google GenAI SDK client
-        self.client = genai.Client(api_key=api_key)
+        # Use fallback key if empty to allow offline/mock initialization without crashing
+        key = api_key or "dummy_key_for_offline_mock"
+        self.client = genai.Client(api_key=key)
 
     async def analyze(self, image_bytes: bytes, incident: Incident, mime_type: str = "image/jpeg", filename: str = "") -> Incident:
         prompt = f"""
@@ -28,7 +33,7 @@ class PerceptionAgent:
             confidence: float = Field(description="Score between 0.0 and 1.0")
             severity: Literal["low", "medium", "high"]
             reasoning: str
- 
+
         try:
             response = self.client.models.generate_content(
                 model='gemini-2.5-flash',
@@ -42,9 +47,11 @@ class PerceptionAgent:
                 ),
             )
             result = json.loads(response.text)
-        except Exception as e:
+        except (genai_errors.APIError, json.JSONDecodeError, httpx.HTTPError, ValueError, KeyError, TypeError, Exception) as e:
             # Failure recovery fallback if Gemini API is down, rate limited, or quota exhausted
+            err_type = type(e).__name__
             err_str = str(e)
+            logger.warning(f"Perception API Exception ({err_type}): {err_str}. Activating intelligent failover mock.")
             
             # Intelligent fallback guessing from filename
             name_lower = filename.lower()
@@ -63,7 +70,7 @@ class PerceptionAgent:
                 "issue_type": fallback_type,
                 "confidence": 0.88,
                 "severity": "medium",
-                "reasoning": f"Failover Mock Active (Gemini API rate-limited: {err_str[:40]}...)"
+                "reasoning": f"Failover Mock Active ({err_type}: {err_str[:40]}...)"
             }
             
         conf_percent = f"{int(result['confidence'] * 100)}%"

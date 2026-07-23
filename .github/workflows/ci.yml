@@ -80,3 +80,31 @@ jobs:
       - name: Build containers via Docker Compose
         run: |
           docker compose build
+
+  frontend-deploy:
+    needs: [frontend-build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/comp-unstop' || github.ref == 'refs/heads/master')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          VITE_API_BASE_URL=https://acirp-backend.onrender.com npm run build
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACIRP_UNSTOP != '' }}
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACIRP_UNSTOP }}'
+          projectId: acirp-unstop
+          channelId: live
+

@@ -768,62 +768,88 @@ export default function App() {
               <Upload className="h-4 w-4 text-slate-500" /> 1. Citizen Submission Node
             </h2>
 
-            <form onSubmit={handleCreateIncident} className="space-y-3 text-left">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Complainant Name *</label>
-                <input 
-                  type="text"
-                  placeholder="Enter your full name"
-                  value={complainantName}
-                  onChange={(e) => setComplainantName(e.target.value)}
-                  required
-                  className="w-full text-xs p-2.5 border border-white/10 bg-slate-950/40 text-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500/50 placeholder-slate-600"
-                />
+            {selectedIncident && selectedIncident.status !== "CLOSED" && selectedIncident.status !== "AWAITING_REUPLOAD" ? (
+              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-3 text-left">
+                <div className="flex items-center gap-2 text-amber-400">
+                  <AlertTriangle className="h-4 w-4 animate-pulse" />
+                  <span className="font-outfit font-bold text-xs">Incident Resolution Ongoing</span>
+                </div>
+                <p className="text-[11px] text-amber-200/80 leading-normal">
+                  An active complaint ticket (<span className="font-mono text-amber-300">{selectedIncident.id}</span>) is currently in progress (Status: <span className="font-bold text-white">{selectedIncident.status}</span>).
+                </p>
+                <p className="text-[10px] text-slate-400 leading-normal">
+                  New complaint filings are locked until the active case is closed or verified. If uploading proof of cleanup, please use the Verification Pending panel.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedIncId("");
+                    setSelectedIncident(null);
+                    setBrainDecision(null);
+                  }}
+                  className="w-full text-center bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] font-bold py-2 rounded-xl border border-white/5 transition"
+                >
+                  Deselect Ticket to File New Complaint
+                </button>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase">Latitude</label>
+            ) : (
+              <form onSubmit={handleCreateIncident} className="space-y-3 text-left">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Complainant Name *</label>
                   <input 
-                    type="text" 
-                    value={lat} 
-                    onChange={(e) => setLat(e.target.value)} 
-                    className="w-full text-xs p-2 border border-white/5 bg-slate-950/20 text-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 font-mono"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={complainantName}
+                    onChange={(e) => setComplainantName(e.target.value)}
+                    required
+                    className="w-full text-xs p-2.5 border border-white/10 bg-slate-950/40 text-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500/50 placeholder-slate-600"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase">Longitude</label>
-                  <input 
-                    type="text" 
-                    value={lng} 
-                    onChange={(e) => setLng(e.target.value)} 
-                    className="w-full text-xs p-2 border border-white/5 bg-slate-950/20 text-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 font-mono"
-                  />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase">Latitude</label>
+                    <input 
+                      type="text" 
+                      value={lat} 
+                      onChange={(e) => setLat(e.target.value)} 
+                      className="w-full text-xs p-2 border border-white/5 bg-slate-950/20 text-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase">Longitude</label>
+                    <input 
+                      type="text" 
+                      value={lng} 
+                      onChange={(e) => setLng(e.target.value)} 
+                      className="w-full text-xs p-2 border border-white/5 bg-slate-950/20 text-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 font-mono"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="border border-dashed border-white/10 bg-slate-950/30 hover:border-blue-400/50 rounded-xl p-4 text-center cursor-pointer transition relative">
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  value={imageFile ? undefined : ""}
-                  onChange={(e) => setImageFile(e.target.files[0])}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-                <span className="text-xs font-semibold text-slate-400 flex justify-center items-center gap-1.5">
-                  <Upload className="h-4 w-4 text-slate-500" />
-                  {imageFile ? imageFile.name : "Select Hazard Photo"}
-                </span>
-              </div>
+                <div className="border border-dashed border-white/10 bg-slate-950/30 hover:border-blue-400/50 rounded-xl p-4 text-center cursor-pointer transition relative">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    value={imageFile ? undefined : ""}
+                    onChange={(e) => setImageFile(e.target.files[0])}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <span className="text-xs font-semibold text-slate-400 flex justify-center items-center gap-1.5">
+                    <Upload className="h-4 w-4 text-slate-500" />
+                    {imageFile ? imageFile.name : "Select Hazard Photo"}
+                  </span>
+                </div>
 
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-blue-500/10"
-              >
-                {isSubmitting ? "Uploading petition..." : "File Complaint & Verify Location"}
-              </button>
-            </form>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-blue-500/10"
+                >
+                  {isSubmitting ? "Uploading petition..." : "File Complaint & Verify Location"}
+                </button>
+              </form>
+            )}
           </div>
 
           {/* Verification section */}

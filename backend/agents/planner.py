@@ -1,4 +1,5 @@
 import logging
+import httpx
 from datetime import datetime, timedelta
 from typing import Optional
 from models import Incident, TimelineEvent, Strategy, PlannerDecision
@@ -81,16 +82,17 @@ class PlanningAgent:
                     reason=f"Municipal registry confirmed receipt and generated tracking token: {token}",
                     next_action="Monitoring portal database for resolution update"
                 ))
-            except Exception as e:
+            except (httpx.HTTPError, httpx.TimeoutException, RuntimeError, ValueError, KeyError, TimeoutError, Exception) as e:
                 # Playwright/submission failure: trigger automatic escalation
-                logger.error(f"Filing tool failed: {e}")
+                err_type = type(e).__name__
+                logger.error(f"Filing tool failed ({err_type}): {e}")
                 incident.status = "ESCALATED"
                 incident.timeline.append(TimelineEvent(
                     timestamp=timestamp,
                     stage="TOOL",
-                    decision="Portal submission timeout",
+                    decision="Portal submission failed",
                     confidence="0%",
-                    reason=f"Unable to connect to municipal database: {str(e)}",
+                    reason=f"Unable to connect to municipal database ({err_type}): {str(e)}",
                     next_action="Requesting citizen approval for direct escalation notice"
                 ))
                 
